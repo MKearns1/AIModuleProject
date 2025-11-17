@@ -32,7 +32,8 @@ public class TileMovement : MonoBehaviour
                 transform.position = MoveToPos;
                 moving = false;
                 moveProgress = 0;
-               // navMesh.BuildNavMesh();
+                // navMesh.BuildNavMesh();
+                MoveFinished();
                TileMoveFinished.Invoke();
             }
         }
@@ -52,5 +53,15 @@ public class TileMovement : MonoBehaviour
     {
         moveProgress += Time.deltaTime * movementSpeed;
         transform.position = Vector3.Lerp(PrevPos, EndPos, moveProgress);
+    }
+
+    public void MoveFinished()
+    {
+        moving = false;
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawSphere(MoveToPos, .1f);
     }
 }

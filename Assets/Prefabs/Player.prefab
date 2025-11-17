@@ -274,6 +274,7 @@ GameObject:
   - component: {fileID: 5066996198970182041}
   - component: {fileID: 6956045650939201609}
   - component: {fileID: 8866224589232354608}
+  - component: {fileID: 4252504800067352907}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -401,7 +402,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 94
+  m_Constraints: 126
   m_CollisionDetection: 0
 --- !u!114 &8866224589232354608
 MonoBehaviour:
@@ -416,6 +417,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BulletPrefab: {fileID: 5129902741809793479, guid: e6474bdb0a0f97343855ea140a32e1c2, type: 3}
+--- !u!114 &4252504800067352907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3861031610830951019}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d69915e5045ef24887a294c754b593f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PrevPos: {x: 0, y: 0, z: 0}
+  MoveToPos: {x: 0, y: 0, z: 0}
+  moving: 0
+  moveProgress: 0
+  movementSpeed: 10
+  TileMoveFinished:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8866224589232354608}
+        m_TargetAssemblyTypeName: 
+        m_MethodName: 
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &3968968623200864238
 GameObject:
   m_ObjectHideFlags: 0

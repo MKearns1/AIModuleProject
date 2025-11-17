@@ -122,13 +122,13 @@ public class Tiles : MonoBehaviour
         int NodePosX = Mathf.RoundToInt((GridSize-1) *PercentAcrossXaxis);
         int NodePosY = Mathf.RoundToInt((GridSize - 1) * PercentAcrossYaxis);
 
-        return NodesGrid[NodePosX, NodePosY];
+        return NodesGrid[NodePosX+1, NodePosY+1];
     }
 
 
     private void OnDrawGizmos()
     {
-        if (false) { 
+        if (true) { 
         Gizmos.DrawCube(transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2),Vector3.one);
 
             if (NodesGrid != null)
@@ -159,9 +159,9 @@ public class Tiles : MonoBehaviour
 
                 foreach (Node n in transform.GetComponent<AStarPathfinding>().GetNodeNeighbours(playersNode))
                 {
-                    Gizmos.color = Color.blue;
+                   // Gizmos.color = Color.blue;
 
-                    Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
+                   // Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
 
                 }
 
