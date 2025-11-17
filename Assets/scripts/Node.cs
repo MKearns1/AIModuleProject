@@ -8,6 +8,9 @@ public class Node
 
     public Node ParentNode;
 
+    public int gCost;
+    public int hCost;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -25,5 +28,10 @@ public class Node
         GridPos = gridpos;
         walkable = w;
         worldPos = wp;
+    }
+
+    public int GetFcost()
+    {
+        return gCost + hCost;
     }
 }

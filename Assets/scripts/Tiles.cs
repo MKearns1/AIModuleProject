@@ -1,14 +1,18 @@
 using Unity.AI.Navigation;
 using Unity.VisualScripting;
 using UnityEngine;
+using static UnityEditor.PlayerSettings;
+using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 public class Tiles : MonoBehaviour
 {
-     int GridSize = 40;
+    public int GridSize = 50;
     public float Scale = 1f;
 
     public Node[,] NodesGrid;
-
+    public LayerMask[] UnwalkabableLayers;
+    Vector3 BottomLeft = Vector3.zero;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -32,9 +36,9 @@ public class Tiles : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-       // Debug.Log(NodesGrid.GetLength(0).ToString() + " "+NodesGrid.GetLength(1).ToString());
+        // Debug.Log(NodesGrid.GetLength(0).ToString() + " "+NodesGrid.GetLength(1).ToString());
 
-
+        //transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, GameObject.Find("Player").transform.position);
     }
 
     GameObject CreateTile(Vector3 Position)
@@ -56,7 +60,7 @@ public class Tiles : MonoBehaviour
 
     void GenerateGrid()
     {
-        Vector3 BottomLeft = transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2);
+        BottomLeft = transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2);
         NodesGrid = new Node[GridSize, GridSize];
 
         for (int x = 0; x < GridSize; x++)
@@ -70,7 +74,14 @@ public class Tiles : MonoBehaviour
                 GameObject newTile = CreateTile(TilePosition);
 
                 Vector2 gridpos = new Vector2(x, y);
-                bool NodeWalkable = !Physics.CheckBox(TilePosition, Vector3.one * Scale);
+
+                bool NodeWalkable = true;
+
+                foreach (LayerMask l in UnwalkabableLayers)
+                {
+                    NodeWalkable = !Physics.CheckBox(TilePosition, Vector3.one * Scale, transform.rotation,l);
+                }
+
                 Node node = new Node(gridpos, NodeWalkable, TilePosition);
                 NodesGrid[x, y] = node;
 
@@ -96,21 +107,77 @@ public class Tiles : MonoBehaviour
         }
     }
 
+    public Node GetNodeFromWorldPosition(Vector3 WorldPosition)
+    {
+        float PercentAcrossXaxis =
+    (WorldPosition.x - BottomLeft.x) / (GridSize * Scale);
+
+        float PercentAcrossYaxis =
+            (WorldPosition.z - BottomLeft.z) / (GridSize * Scale);
+
+
+        PercentAcrossXaxis = Mathf.Clamp01(PercentAcrossXaxis);
+        PercentAcrossYaxis = Mathf.Clamp01(PercentAcrossYaxis);
+
+        int NodePosX = Mathf.RoundToInt((GridSize-1) *PercentAcrossXaxis);
+        int NodePosY = Mathf.RoundToInt((GridSize - 1) * PercentAcrossYaxis);
+
+        return NodesGrid[NodePosX, NodePosY];
+    }
+
+
     private void OnDrawGizmos()
     {
+        if (false) { 
         Gizmos.DrawCube(transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2),Vector3.one);
 
-        if(NodesGrid !=null) {
-            for (int i = 0; i < NodesGrid.GetLength(0); i++)
+            if (NodesGrid != null)
             {
-                for (int j = 0; j < NodesGrid.GetLength(1); j++)
-                {
-                    Vector3 pos = NodesGrid[i, j].worldPos;
-                    //pos.z = pos.y;
 
-                    Vector3 scale = Vector3.one * Scale;
-                    Gizmos.color = Color.white;
-                    Gizmos.DrawCube(pos, scale*.9f);
+                Node playersNode = GetNodeFromWorldPosition(GameObject.Find("Player").transform.position);
+                for (int i = 0; i < NodesGrid.GetLength(0); i++)
+                {
+                    for (int j = 0; j < NodesGrid.GetLength(1); j++)
+                    {
+                        Vector3 pos = NodesGrid[i, j].worldPos;
+                        //pos.z = pos.y;
+
+                        Vector3 scale = Vector3.one * Scale;
+                        Gizmos.color = Color.white;
+
+                        if (NodesGrid[i, j] == playersNode)
+                        {
+                            Gizmos.color = Color.red;
+                        }
+                        else if (!NodesGrid[i, j].walkable)
+                        {
+                            Gizmos.color = Color.black;
+                        }
+                        Gizmos.DrawCube(pos, scale * .9f);
+                    }
+                }
+
+                foreach (Node n in transform.GetComponent<AStarPathfinding>().GetNodeNeighbours(playersNode))
+                {
+                    Gizmos.color = Color.blue;
+
+                    Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
+
+                }
+
+                List<Node> Path = transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, playersNode.worldPos);
+                if (Path.Count > 0)
+                {
+                    Color pathColor = Color.green;
+                    float pp = 1/ (float)Path.Count;
+                    foreach (Node n in Path)
+                    {
+                        pathColor += new Color(0, -pp, pp);
+                        Gizmos.color = pathColor;
+
+                        Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
+
+                    }
                 }
             }
         }

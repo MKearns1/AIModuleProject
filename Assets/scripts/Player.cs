@@ -9,14 +9,13 @@ public class Player : MonoBehaviour
     int Health = 5;
     float moveAmount;
     Tiles tilescript;
-    bool moving;
     Vector3 MoveToPos;
     Vector3 PrevPos;
-    float moveProgress;
     public GameObject BulletPrefab;
     Transform BulletSpawnPos;
     TextMeshPro HealthText;
     NavMeshSurface navMesh;
+    TileMovement TileMover;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -27,6 +26,7 @@ public class Player : MonoBehaviour
         BulletSpawnPos = transform.Find("BulletSpawnPos");
         HealthText = transform.Find("HealthText").GetComponent<TextMeshPro>();
         navMesh = GameObject.FindGameObjectWithTag("NavMesh").gameObject.GetComponent<NavMeshSurface>();
+        TileMover = GetComponent<TileMovement>();
 
     }
 
@@ -58,19 +58,7 @@ public class Player : MonoBehaviour
 
         CheckInputs();
 
-        if(moving)
-        {
-            MoveTransition(PrevPos, MoveToPos, moveProgress);
-
-            float Dist = Vector3.Distance(transform.position, MoveToPos);
-            if (Dist < .1f)
-            {
-                transform.position = MoveToPos;
-                moving = false;
-                moveProgress = 0;
-                navMesh.BuildNavMesh();
-            }
-        }
+        
 
 
         HealthText.transform.rotation = Camera.main.transform.rotation;
@@ -95,43 +83,29 @@ public class Player : MonoBehaviour
         rb.MovePosition(rb.position + movementDir);
     }
 
-    void TileMovement(Vector3 Direction)
-    {
-        PrevPos = transform.position;
-        MoveToPos = PrevPos + Direction;
-        var rotation = Quaternion.LookRotation(Direction);
-        transform.rotation = rotation;
-
-        moving = true;
-    }
-
-    void MoveTransition(Vector3 startPos, Vector3 EndPos, float amount)
-    {
-        moveProgress += Time.deltaTime * movementSpeed;
-        transform.position = Vector3.Lerp(PrevPos,EndPos, moveProgress);
-    }
+   
 
     void CheckInputs()
     {
-        if (!moving)
+        if (!TileMover.moving)
         {
             if (Input.GetKeyDown(KeyCode.W))
             {
-                TileMovement(Vector3.forward * moveAmount);
+                TileMover.TileMove(Vector3.forward * moveAmount);
             }
             else if (Input.GetKeyDown(KeyCode.S))
             {
-                TileMovement(Vector3.back * moveAmount);
+                TileMover.TileMove(Vector3.back * moveAmount);
 
             }
             else if (Input.GetKeyDown(KeyCode.D))
             {
-                TileMovement(Vector3.right * moveAmount);
+                TileMover.TileMove(Vector3.right * moveAmount);
 
             }
             else if (Input.GetKeyDown(KeyCode.A))
             {
-                TileMovement(Vector3.left * moveAmount);
+                TileMover.TileMove(Vector3.left * moveAmount);
 
             }
 
@@ -165,6 +139,12 @@ public class Player : MonoBehaviour
     {
         gameObject.SetActive(false);
     }
+
+    public void MoveFinished()
+    {
+        
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.DrawSphere(MoveToPos, .1f);

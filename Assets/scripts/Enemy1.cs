@@ -2,13 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class Enemy1 : MonoBehaviour
+public class Enemy1 : EnemyBase
 {
     NavMeshAgent agent;
-    Player player;
-    float BiteRate = 1f;
-    float NextAttack;
-    int Health = 5;
     TextMeshPro HealthText;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -36,27 +32,5 @@ public class Enemy1 : MonoBehaviour
         HealthText.text = Health.ToString();
     }
 
-    void Attack()
-    {
-        if (Time.time > NextAttack)
-        {
-            NextAttack = Time.time + BiteRate;
-
-            player.TakeDamage(1);
-        }
-    }
-
-    public void TakeDamage(int amount)
-    {
-        Health -= amount;
-        if (Health <= 0)
-        {
-            Death();
-        }
-    }
-
-    public void Death()
-    {
-        gameObject.SetActive(false);
-    }
+   
 }
