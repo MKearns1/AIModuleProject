@@ -26,7 +26,7 @@ public class Tiles : MonoBehaviour
         Vector3 offset = new Vector3(0, 15, -25);
         //Camera.main.transform.position = GridCentre+offset;
 
-        GameObject.FindGameObjectWithTag("NavMesh").gameObject.GetComponent<NavMeshSurface>().BuildNavMesh();
+        //GameObject.FindGameObjectWithTag("NavMesh").gameObject.GetComponent<NavMeshSurface>().BuildNavMesh();
     }
     private void Awake()
     {
@@ -73,7 +73,7 @@ public class Tiles : MonoBehaviour
                 Vector3 TilePosition = direction + BottomLeft;
                 GameObject newTile = CreateTile(TilePosition);
 
-                Vector2 gridpos = new Vector2(x, y);
+                Vector2Int gridpos = new Vector2Int(x, y);
 
                 bool NodeWalkable = true;
 
@@ -109,26 +109,40 @@ public class Tiles : MonoBehaviour
 
     public Node GetNodeFromWorldPosition(Vector3 WorldPosition)
     {
-        float PercentAcrossXaxis =
-    (WorldPosition.x - BottomLeft.x) / (GridSize * Scale);
 
-        float PercentAcrossYaxis =
-            (WorldPosition.z - BottomLeft.z) / (GridSize * Scale);
+        float worldOffsetX = WorldPosition.x - BottomLeft.x;
+        float worldOffsetY = WorldPosition.z - BottomLeft.z;
+
+        int NodePosX = Mathf.FloorToInt(worldOffsetX / Scale);
+        int NodePosY = Mathf.FloorToInt(worldOffsetY / Scale);
+
+        NodePosX = Mathf.Clamp(NodePosX, 0, GridSize - 1);
+        NodePosY = Mathf.Clamp(NodePosY, 0, GridSize - 1);
+
+        return NodesGrid[NodePosX, NodePosY];
 
 
-        PercentAcrossXaxis = Mathf.Clamp01(PercentAcrossXaxis);
-        PercentAcrossYaxis = Mathf.Clamp01(PercentAcrossYaxis);
 
-        int NodePosX = Mathf.RoundToInt((GridSize-1) *PercentAcrossXaxis);
-        int NodePosY = Mathf.RoundToInt((GridSize - 1) * PercentAcrossYaxis);
+    //    float PercentAcrossXaxis =
+    //(WorldPosition.x - BottomLeft.x) / (GridSize * Scale);
 
-        return NodesGrid[NodePosX+1, NodePosY+1];
+    //    float PercentAcrossYaxis =
+    //        (WorldPosition.z - BottomLeft.z) / (GridSize * Scale);
+
+
+    //    PercentAcrossXaxis = Mathf.Clamp01(PercentAcrossXaxis);
+    //    PercentAcrossYaxis = Mathf.Clamp01(PercentAcrossYaxis);
+
+    //    int NodePosX = Mathf.RoundToInt((GridSize-1) *PercentAcrossXaxis);
+    //    int NodePosY = Mathf.RoundToInt((GridSize - 1) * PercentAcrossYaxis);
+
+    //    return NodesGrid[NodePosX+0, NodePosY+0];
     }
 
 
     private void OnDrawGizmos()
     {
-        if (true) { 
+        if (false) { 
         Gizmos.DrawCube(transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2),Vector3.one);
 
             if (NodesGrid != null)

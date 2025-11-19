@@ -73,7 +73,7 @@ public class AStarPathfinding : MonoBehaviour
         float d = Vector3.Distance(Node1.worldPos, Node2.worldPos);
         //  return (int)d;
 
-        Distance = (Xdist * 10) + (Ydist * 10);
+        //Distance = (Xdist * 10) + (Ydist * 10);
 
         return Distance;
 

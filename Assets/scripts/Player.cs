@@ -1,6 +1,7 @@
 using TMPro;
 using Unity.AI.Navigation;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
@@ -16,6 +17,7 @@ public class Player : MonoBehaviour
     TextMeshPro HealthText;
     NavMeshSurface navMesh;
     TileMovement TileMover;
+    CapsuleCollider capsuleCollider;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -25,16 +27,16 @@ public class Player : MonoBehaviour
         moveAmount = tilescript.Scale;
         BulletSpawnPos = transform.Find("BulletSpawnPos");
         HealthText = transform.Find("HealthText").GetComponent<TextMeshPro>();
-        navMesh = GameObject.FindGameObjectWithTag("NavMesh").gameObject.GetComponent<NavMeshSurface>();
+        //navMesh = GameObject.FindGameObjectWithTag("NavMesh").gameObject.GetComponent<NavMeshSurface>();
         TileMover = GetComponent<TileMovement>();
+        capsuleCollider = GetComponent<CapsuleCollider>();
 
     }
 
     // Update is called once per frame
     void Update()
     {
-        var horizontalInput = Input.GetAxis("Horizontal");
-        var verticalInput = Input.GetAxis("Vertical");
+       
 
         //if (verticalInput > 0)
         //{
@@ -87,33 +89,57 @@ public class Player : MonoBehaviour
 
     void CheckInputs()
     {
-        if (!TileMover.moving)
+        if (TileMover.moving)
+            return;
+
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            if (Input.GetKeyDown(KeyCode.W))
-            {
-                TileMover.TileMove(Vector3.forward * moveAmount);
-            }
-            else if (Input.GetKeyDown(KeyCode.S))
-            {
-                TileMover.TileMove(Vector3.back * moveAmount);
-
-            }
-            else if (Input.GetKeyDown(KeyCode.D))
-            {
-                TileMover.TileMove(Vector3.right * moveAmount);
-
-            }
-            else if (Input.GetKeyDown(KeyCode.A))
-            {
-                TileMover.TileMove(Vector3.left * moveAmount);
-
-            }
-
-            if(Input.GetKeyDown(KeyCode.Space))
-            {
-                Shoot();
-            }
+            Shoot();
         }
+
+        var horizontalInput = Input.GetAxis("Horizontal");
+        var verticalInput = Input.GetAxis("Vertical");
+
+        //if (horizontalInput > 0) horizontalInput = 1;
+        //if (horizontalInput < 0) horizontalInput = -1;
+        //if (verticalInput > 0) verticalInput = 1;
+        //if (verticalInput < 0) verticalInput = -1;
+
+        if (Input.GetKey(KeyCode.D)) horizontalInput = 1;
+        if (Input.GetKey(KeyCode.A)) horizontalInput = -1;
+        if (Input.GetKey(KeyCode.W)) verticalInput = 1;
+        if (Input.GetKey(KeyCode.S)) verticalInput = -1;
+
+        Vector2Int MoveDir = new Vector2Int((int)horizontalInput,(int)verticalInput);
+
+        Debug.Log(MoveDir);
+
+
+        if (MoveDir == Vector2Int.zero)
+            return;
+
+
+        Node CurrentNode = tilescript.GetNodeFromWorldPosition(transform.position);
+        int CurNodeX = (int)CurrentNode.GridPos.x;
+        int CurNodeY = (int)CurrentNode.GridPos.y;
+        Node NextNode;
+
+        int NextX = CurNodeX + MoveDir.x;
+        int NextY = CurNodeY + MoveDir.y;
+
+        if (NextX < 0 || NextY < 0 || NextX >= tilescript.GridSize || NextY >= tilescript.GridSize)
+            return;
+
+        NextNode = tilescript.NodesGrid[NextX, NextY];
+
+        if (!NextNode.walkable)
+            return;
+
+
+        Vector3 TargetPos = NextNode.worldPos + Vector3.up * capsuleCollider.height / 2;
+
+        TileMover.MoveToPoint(TargetPos);
+        
     }
 
     void Shoot()
@@ -144,6 +170,9 @@ public class Player : MonoBehaviour
     {
         
     }
+
+
+
 
     private void OnDrawGizmos()
     {

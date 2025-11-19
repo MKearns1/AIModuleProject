@@ -13,10 +13,12 @@ public class TileMovement : MonoBehaviour
 
     public UnityEvent TileMoveFinished = new UnityEvent();
 
+    CapsuleCollider Capsulecollider;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        Capsulecollider = GetComponent<CapsuleCollider>();
     }
 
     // Update is called once per frame
@@ -39,10 +41,25 @@ public class TileMovement : MonoBehaviour
         }
     }
 
-    public void TileMove(Vector3 Direction)
+    public void MoveInDirection(Vector3 Direction)
     {
         PrevPos = transform.position;
         MoveToPos = PrevPos + Direction;
+        var rotation = Quaternion.LookRotation(Direction);
+        transform.rotation = rotation;
+
+        moving = true;
+    }
+
+    public void MoveToPoint(Vector3 Point)
+    {
+        PrevPos = transform.position;
+        MoveToPos = Point;
+       // MoveToPos = Point + Vector3.up*Capsulecollider.height/2;
+
+        Vector3 Direction = new Vector3(MoveToPos.x,0,MoveToPos.z) - new Vector3(PrevPos.x,0,PrevPos.z);
+        Direction = Vector3.Normalize(Direction);
+
         var rotation = Quaternion.LookRotation(Direction);
         transform.rotation = rotation;
 

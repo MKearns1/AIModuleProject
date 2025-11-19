@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Node
 {
-    public Vector2 GridPos;
+    public Vector2Int GridPos;
     public bool walkable;
     public Vector3 worldPos;
 
@@ -23,7 +23,7 @@ public class Node
         
     }
 
-    public Node(Vector2 gridpos, bool w, Vector3 wp)
+    public Node(Vector2Int gridpos, bool w, Vector3 wp)
     {
         GridPos = gridpos;
         walkable = w;
