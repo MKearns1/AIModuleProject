@@ -1,7 +1,6 @@
 using UnityEngine;
-using static UnityEngine.UI.GridLayoutGroup;
 
-public class BulletScript : MonoBehaviour
+public class EnemyBulletScript : MonoBehaviour
 {
     Rigidbody rb;
     float BulletSpeed = 20;
@@ -19,20 +18,20 @@ public class BulletScript : MonoBehaviour
         
     }
 
-    public void Initialize(Vector3 Direction)
+    public void Initialize(Vector3 Direction, GameObject owner)
     {
         rb = GetComponent<Rigidbody>();
         rb.linearVelocity = Direction*BulletSpeed;
+        this.owner = owner;
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject == owner) return;
-
-        if (other.gameObject.tag == "Enemy")
+        if(other.gameObject.tag == "Player")
         {
-            Enemy1 enemy = other.gameObject.GetComponent<Enemy1>();
-            enemy.TakeDamage(1);
+            Player player = other.gameObject.GetComponent<Player>();
+            player.TakeDamage(1);
 
         }
         Destroy(gameObject);

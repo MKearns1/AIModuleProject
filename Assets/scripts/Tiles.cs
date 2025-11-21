@@ -9,10 +9,11 @@ public class Tiles : MonoBehaviour
 {
     public int GridSize = 50;
     public float Scale = 1f;
-
+    
     public Node[,] NodesGrid;
-    public LayerMask[] UnwalkabableLayers;
     Vector3 BottomLeft = Vector3.zero;
+
+    public TerrainTypes TerrainData;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -71,35 +72,35 @@ public class Tiles : MonoBehaviour
                 //direction += BottomLeft;
                 //BottomLeft += direction;
                 Vector3 TilePosition = direction + BottomLeft;
-                GameObject newTile = CreateTile(TilePosition);
+              //  GameObject newTile = CreateTile(TilePosition);
 
                 Vector2Int gridpos = new Vector2Int(x, y);
 
                 bool NodeWalkable = true;
 
-                foreach (LayerMask l in UnwalkabableLayers)
-                {
-                    NodeWalkable = !Physics.CheckBox(TilePosition, Vector3.one * Scale, transform.rotation,l);
-                }
 
-                Node node = new Node(gridpos, NodeWalkable, TilePosition);
+                NodeType nodeType = DetectNodeType(TilePosition);
+
+
+                Node node = new Node(gridpos, TilePosition, nodeType);
+
                 NodesGrid[x, y] = node;
 
-                newTile.GetComponent<Renderer>().material.color = Color.white;
+               // newTile.GetComponent<Renderer>().material.color = Color.white;
 
 
                 if (x % 2 == 0)
                 {
                     if (y % 2 != 0)
                     {
-                        newTile.GetComponent<Renderer>().material.color = Color.gray;
+                       // newTile.GetComponent<Renderer>().material.color = Color.gray;
                     }
                 }
                 else
                 {
                     if (y % 2 == 0)
                     {
-                        newTile.GetComponent<Renderer>().material.color = Color.gray;
+                        //newTile.GetComponent<Renderer>().material.color = Color.gray;
                     }
                 }
                 //newTile.GetComponent<Renderer>().material
@@ -139,10 +140,30 @@ public class Tiles : MonoBehaviour
     //    return NodesGrid[NodePosX+0, NodePosY+0];
     }
 
+    public NodeType DetectNodeType(Vector3 WorldPos)
+    {
+        NodeType type = NodeType.Default;
+        int highestPriority = -1;
+
+        foreach (var rule in TerrainData.rules)
+        {
+            if (Physics.CheckBox(WorldPos, Vector3.one * Scale * 0.4f, Quaternion.identity, rule.LayerMask))
+            {
+                if (rule.priority > highestPriority)
+                {
+                    highestPriority = rule.priority;
+                    type = rule.Type;
+                }
+
+            }
+        }
+
+        return type;
+    }
 
     private void OnDrawGizmos()
     {
-        if (false) { 
+        if (true) { 
         Gizmos.DrawCube(transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2),Vector3.one);
 
             if (NodesGrid != null)
@@ -163,10 +184,23 @@ public class Tiles : MonoBehaviour
                         {
                             Gizmos.color = Color.red;
                         }
-                        else if (!NodesGrid[i, j].walkable)
+
+                        switch (DetectNodeType(NodesGrid[i, j].worldPos))
                         {
-                            Gizmos.color = Color.black;
+                            case NodeType.Untraversable:
+                                Gizmos.color = Color.black; break;
+                            case NodeType.Heavy:
+                                Gizmos.color = Color.red; break;
                         }
+
+                        if(NodesGrid[i, j].occupied)
+                        {
+                            Gizmos.color = Color.yellow;
+                        }
+                        //else if (!NodesGrid[i, j].walkable)
+                        //{
+                        //    Gizmos.color = Color.black;
+                        //}
                         Gizmos.DrawCube(pos, scale * .9f);
                     }
                 }
@@ -179,20 +213,20 @@ public class Tiles : MonoBehaviour
 
                 }
 
-                List<Node> Path = transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, playersNode.worldPos);
-                if (Path.Count > 0)
-                {
-                    Color pathColor = Color.green;
-                    float pp = 1/ (float)Path.Count;
-                    foreach (Node n in Path)
-                    {
-                        pathColor += new Color(0, -pp, pp);
-                        Gizmos.color = pathColor;
+                //List<Node> Path = transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, playersNode.worldPos);
+                //if (Path.Count > 0)
+                //{
+                //    Color pathColor = Color.green;
+                //    float pp = 1/ (float)Path.Count;
+                //    foreach (Node n in Path)
+                //    {
+                //        pathColor += new Color(0, -pp, pp);
+                //        Gizmos.color = pathColor;
 
-                        Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
+                //        Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
 
-                    }
-                }
+                //    }
+                //}
             }
         }
     }

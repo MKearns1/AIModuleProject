@@ -46,7 +46,7 @@ public class TileMovement : MonoBehaviour
         PrevPos = transform.position;
         MoveToPos = PrevPos + Direction;
         var rotation = Quaternion.LookRotation(Direction);
-        transform.rotation = rotation;
+        transform.rotation = Quaternion.Lerp(transform.rotation,rotation,Time.deltaTime *1);
 
         moving = true;
     }
@@ -61,7 +61,6 @@ public class TileMovement : MonoBehaviour
         Direction = Vector3.Normalize(Direction);
 
         var rotation = Quaternion.LookRotation(Direction);
-        transform.rotation = rotation;
 
         moving = true;
     }
@@ -69,7 +68,24 @@ public class TileMovement : MonoBehaviour
     public void MoveTransition(Vector3 startPos, Vector3 EndPos, float amount)
     {
         moveProgress += Time.deltaTime * movementSpeed;
-        transform.position = Vector3.Lerp(PrevPos, EndPos, moveProgress);
+        float t = Mathf.Clamp01(moveProgress);
+
+        Vector3 flatPos = Vector3.Lerp(startPos, EndPos, t);
+
+
+        float Fulldist = Vector3.Distance(PrevPos, EndPos);
+        float curdist = Vector3.Distance(transform.position, EndPos);
+
+        float maxJumpHeight = 1;
+        float height = 4 * maxJumpHeight * t * (1 - t);
+        flatPos.y += height;
+        transform.position = flatPos;
+
+        Vector3 Direction = new Vector3(MoveToPos.x, 0, MoveToPos.z) - new Vector3(PrevPos.x, 0, PrevPos.z);
+        Direction = Vector3.Normalize(Direction);
+
+        var rotation = Quaternion.LookRotation(Direction);
+        transform.rotation = Quaternion.Lerp(transform.rotation, rotation, moveProgress);
     }
 
     public void MoveFinished()

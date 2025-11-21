@@ -97,7 +97,6 @@ GameObject:
   - component: {fileID: 6904822741022605401}
   - component: {fileID: 791625114541164524}
   - component: {fileID: 4199419102733216181}
-  - component: {fileID: 4657914895627582836}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -173,27 +172,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4657914895627582836
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2663497934100029459}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2979444324198403603
 GameObject:
   m_ObjectHideFlags: 0
@@ -433,7 +411,7 @@ MonoBehaviour:
   MoveToPos: {x: 0, y: 0, z: 0}
   moving: 0
   moveProgress: 0
-  movementSpeed: 10
+  movementSpeed: 5
   TileMoveFinished:
     m_PersistentCalls:
       m_Calls:
@@ -632,7 +610,6 @@ GameObject:
   - component: {fileID: 5338381829758772118}
   - component: {fileID: 3201585072888493455}
   - component: {fileID: 6677603847981883905}
-  - component: {fileID: 2524283015066570148}
   m_Layer: 0
   m_Name: Cube (1)
   m_TagString: Untagged
@@ -708,27 +685,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &2524283015066570148
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4255096056615243524}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4799872503684069638
 GameObject:
   m_ObjectHideFlags: 0
@@ -779,7 +735,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6620307459023345682
 RectTransform:
   m_ObjectHideFlags: 0

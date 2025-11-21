@@ -7,7 +7,7 @@ public class Player : MonoBehaviour
 {
     Rigidbody rb;
     float movementSpeed = 10;
-    int Health = 5;
+    int Health = 522;
     float moveAmount;
     Tiles tilescript;
     Vector3 MoveToPos;
@@ -18,6 +18,8 @@ public class Player : MonoBehaviour
     NavMeshSurface navMesh;
     TileMovement TileMover;
     CapsuleCollider capsuleCollider;
+
+    Vector3 CamOffset;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -30,13 +32,16 @@ public class Player : MonoBehaviour
         //navMesh = GameObject.FindGameObjectWithTag("NavMesh").gameObject.GetComponent<NavMeshSurface>();
         TileMover = GetComponent<TileMovement>();
         capsuleCollider = GetComponent<CapsuleCollider>();
-
+        CamOffset = Camera.main.transform.position - transform.position;
     }
 
     // Update is called once per frame
     void Update()
     {
-       
+        Vector3 CamPos = (transform.position / 1) + CamOffset;
+        CamPos.y = Camera.main.transform.position.y;
+        Camera.main.transform.position = CamPos;
+
 
         //if (verticalInput > 0)
         //{
@@ -112,8 +117,6 @@ public class Player : MonoBehaviour
 
         Vector2Int MoveDir = new Vector2Int((int)horizontalInput,(int)verticalInput);
 
-        Debug.Log(MoveDir);
-
 
         if (MoveDir == Vector2Int.zero)
             return;
@@ -132,12 +135,15 @@ public class Player : MonoBehaviour
 
         NextNode = tilescript.NodesGrid[NextX, NextY];
 
-        if (!NextNode.walkable)
+        if (NextNode.nodeTyoe == NodeType.Untraversable || NextNode.occupied)
             return;
 
 
         Vector3 TargetPos = NextNode.worldPos + Vector3.up * capsuleCollider.height / 2;
 
+
+        tilescript.NodesGrid[NextX,NextY].occupied = true;
+        tilescript.NodesGrid[CurNodeX,CurNodeY].occupied = false;
         TileMover.MoveToPoint(TargetPos);
         
     }

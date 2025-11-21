@@ -125,7 +125,25 @@ public class AStarPathfinding : MonoBehaviour
             
             foreach (Node CurrentNodeNeighbour in GetNodeNeighbours(CurrentNode))
             {
-                if(!CurrentNodeNeighbour.walkable || ExploredNodes.Contains(CurrentNodeNeighbour))
+
+                bool shouldSkip = CurrentNodeNeighbour.nodeTyoe == NodeType.Untraversable || CurrentNodeNeighbour.occupied || ExploredNodes.Contains(CurrentNodeNeighbour);
+                //bool occupied = true;
+
+                //if (CurrentNodeNeighbour.occupied)
+                //{
+                //    if (CurrentNodeNeighbour != TilesScript.GetNodeFromWorldPosition(transform.position))
+                //    {
+                //        occupied = false;
+                //    }
+
+                //}
+                //else
+                //{
+                //    occupied = false ;
+                //}
+                bool isGoal = EndNode == CurrentNodeNeighbour;
+
+                if (!isGoal && shouldSkip)
                 {
                     continue;
                 }
