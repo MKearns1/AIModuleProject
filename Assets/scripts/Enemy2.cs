@@ -39,11 +39,12 @@ public class Enemy2 : EnemyBase
         TileMover = GetComponent<TileMovement>();
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
         capsuleCollider = GetComponent<CapsuleCollider>();
-        tiles = GameObject.Find("Tiles").GetComponent<Tiles>();
+        //tiles = GameObject.Find("Tiles").GetComponent<Tiles>();
+        tiles = GameObject.Find("Terrain").GetComponent<Tiles>();
         vision = GetComponent<Vision>();
-
-        GameObject.Find("Tiles").GetComponent<Tiles>().GetNodeFromWorldPosition(transform.position).occupied = true;
         AgentInfo = transform.Find("AgentInfo").gameObject;
+
+        tiles.GetNodeFromWorldPosition(transform.position).occupied = true;
     }
 
     // Update is called once per frame
@@ -242,7 +243,6 @@ public class Enemy2 : EnemyBase
 
     void StartPatrol()
     {
-        Tiles tiles = GameObject.Find("Tiles").GetComponent<Tiles>();
         Transform PatrolPoints = GameObject.Find("PatrolPoints").transform;
 
         List<Transform> Point = new List<Transform>();
@@ -330,7 +330,6 @@ public class Enemy2 : EnemyBase
 
     void StartSearch()
     {
-        Tiles tiles = GameObject.Find("Tiles").GetComponent<Tiles>();
 
         Vector3 RandomPoint = Vector3.zero;
 

@@ -16,11 +16,13 @@ public class TerrainGenerator : MonoBehaviour
     public float scale = 0.3f;
     public float scale2 = 0.3f;
     public float f;
+    public float exponent = 1;
     public float heightMultiplier = 2f;
     Color[] colours;
     float minTerrainHeight = 0f;
     float maxTerrainHeight = 0f;
     public Gradient Colors;
+    Tiles tiles;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -28,6 +30,7 @@ public class TerrainGenerator : MonoBehaviour
         mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
         meshcollider = GetComponent<MeshCollider>();
+        tiles = transform.GetComponent<Tiles>();
 
         remakeMesh(); UpdateMesh();
     }
@@ -35,11 +38,14 @@ public class TerrainGenerator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        remakeMesh();
+        Debug.Log(tiles == null);
+
+       remakeMesh();
     }
 
     void CreateShape()
     {
+        
         vertices = new Vector3[(xSize + 1) * (zSize + 1)];
 
         for (int i = 0, z = 0; z <= zSize; z++)
@@ -58,6 +64,8 @@ public class TerrainGenerator : MonoBehaviour
 
                 float PerlinAdd = Mathf.PerlinNoise(x * scale2, z * scale2) * f;
                 combined = (PerlinBase + PerlinAdd)/2;
+
+                combined = Mathf.Pow(combined, exponent);
 
                 float y = combined * heightMultiplier;
                 vertices[i] = new Vector3(x, y, z);
@@ -125,6 +133,7 @@ public class TerrainGenerator : MonoBehaviour
 
         meshcollider.sharedMesh = null;
         meshcollider.sharedMesh = mesh;
+        tiles.GenerateGridFromTerrain(mesh, transform);
     }
 
     void remakeMesh()

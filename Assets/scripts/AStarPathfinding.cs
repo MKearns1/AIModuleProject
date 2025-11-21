@@ -9,7 +9,8 @@ public class AStarPathfinding : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        TilesScript= GameObject.Find("Tiles").GetComponent<Tiles>();
+       // TilesScript= GameObject.Find("Tiles").GetComponent<Tiles>();
+        TilesScript= GameObject.Find("Terrain").GetComponent<Tiles>();
     }
 
     // Update is called once per frame

@@ -4,6 +4,7 @@ using UnityEngine;
 using static UnityEditor.PlayerSettings;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using static TreeEditor.TreeEditorHelper;
 
 public class Tiles : MonoBehaviour
 {
@@ -31,7 +32,7 @@ public class Tiles : MonoBehaviour
     }
     private void Awake()
     {
-        GenerateGrid();
+       // GenerateGrid();
 
     }
     // Update is called once per frame
@@ -107,6 +108,49 @@ public class Tiles : MonoBehaviour
             }
         }
     }
+
+    public void GenerateGridFromTerrain(Mesh terrainMesh, Transform terrainTransform)
+    {
+        NodesGrid = new Node[GridSize, GridSize];
+
+        BottomLeft = terrainTransform.position;
+
+        for (int x = 0; x < GridSize; x++)
+        {
+            for (int y = 0; y < GridSize; y++)
+            {
+                Vector3 worldPos = BottomLeft +
+                    new Vector3(x * Scale, 100f, y * Scale);
+
+                NodeType type = NodeType.Default;
+
+                // Raycast DOWN to find terrain height
+                if (Physics.Raycast(worldPos, Vector3.down, out RaycastHit hit, 200f))
+                {
+                    worldPos = hit.point;
+                    if ((worldPos.y < 7))
+                    {
+                        type = NodeType.Heavy;
+                    }
+                    else
+                    {
+                        type = NodeType.Default;
+                    }
+                    //type = DetectNodeType(worldPos);
+
+                }
+                else
+                {
+                    type = NodeType.Untraversable;
+
+                }
+
+
+                NodesGrid[x, y] = new Node(new Vector2Int(x, y), worldPos, type);
+            }
+        }
+    }
+
 
     public Node GetNodeFromWorldPosition(Vector3 WorldPosition)
     {
@@ -185,7 +229,7 @@ public class Tiles : MonoBehaviour
                             Gizmos.color = Color.red;
                         }
 
-                        switch (DetectNodeType(NodesGrid[i, j].worldPos))
+                        switch (NodesGrid[i,j].nodeTyoe)
                         {
                             case NodeType.Untraversable:
                                 Gizmos.color = Color.black; break;
@@ -205,13 +249,13 @@ public class Tiles : MonoBehaviour
                     }
                 }
 
-                foreach (Node n in transform.GetComponent<AStarPathfinding>().GetNodeNeighbours(playersNode))
-                {
-                   // Gizmos.color = Color.blue;
+                //foreach (Node n in transform.GetComponent<AStarPathfinding>().GetNodeNeighbours(playersNode))
+                //{
+                //   // Gizmos.color = Color.blue;
 
-                   // Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
+                //   // Gizmos.DrawCube(n.worldPos, Vector3.one * Scale * .9f);
 
-                }
+                //}
 
                 //List<Node> Path = transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, playersNode.worldPos);
                 //if (Path.Count > 0)

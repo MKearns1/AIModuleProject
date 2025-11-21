@@ -25,7 +25,8 @@ public class Player : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        tilescript = GameObject.Find("Tiles").GetComponent<Tiles>();
+       // tilescript = GameObject.Find("Tiles").GetComponent<Tiles>();
+        tilescript = GameObject.Find("Terrain").GetComponent<Tiles>();
         moveAmount = tilescript.Scale;
         BulletSpawnPos = transform.Find("BulletSpawnPos");
         HealthText = transform.Find("HealthText").GetComponent<TextMeshPro>();
