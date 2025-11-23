@@ -19,10 +19,11 @@ public class BulletScript : MonoBehaviour
         
     }
 
-    public void Initialize(Vector3 Direction)
+    public void Initialize(Vector3 Direction, GameObject owner)
     {
         rb = GetComponent<Rigidbody>();
         rb.linearVelocity = Direction*BulletSpeed;
+        this.owner = owner;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -31,7 +32,7 @@ public class BulletScript : MonoBehaviour
 
         if (other.gameObject.tag == "Enemy")
         {
-            Enemy1 enemy = other.gameObject.GetComponent<Enemy1>();
+            EnemyBase enemy = other.gameObject.GetComponent<EnemyBase>();
             enemy.TakeDamage(1);
 
         }

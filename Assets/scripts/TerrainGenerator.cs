@@ -65,7 +65,11 @@ public class TerrainGenerator : MonoBehaviour
                 float PerlinAdd = Mathf.PerlinNoise(x * scale2, z * scale2) * f;
                 combined = (PerlinBase + PerlinAdd)/2;
 
+
+                combined = math.round(combined * exponent) / exponent;
+
                 combined = Mathf.Pow(combined, exponent);
+
 
                 float y = combined * heightMultiplier;
                 vertices[i] = new Vector3(x, y, z);
@@ -133,7 +137,7 @@ public class TerrainGenerator : MonoBehaviour
 
         meshcollider.sharedMesh = null;
         meshcollider.sharedMesh = mesh;
-        tiles.GenerateGridFromTerrain(mesh, transform);
+       // tiles.GenerateGridFromTerrain(mesh, transform);
     }
 
     void remakeMesh()

@@ -25,8 +25,8 @@ public class Player : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-       // tilescript = GameObject.Find("Tiles").GetComponent<Tiles>();
-        tilescript = GameObject.Find("Terrain").GetComponent<Tiles>();
+        tilescript = GameObject.Find("Tiles").GetComponent<Tiles>();
+       // tilescript = GameObject.Find("Terrain").GetComponent<Tiles>();
         moveAmount = tilescript.Scale;
         BulletSpawnPos = transform.Find("BulletSpawnPos");
         HealthText = transform.Find("HealthText").GetComponent<TextMeshPro>();
@@ -143,8 +143,8 @@ public class Player : MonoBehaviour
         Vector3 TargetPos = NextNode.worldPos + Vector3.up * capsuleCollider.height / 2;
 
 
-        tilescript.NodesGrid[NextX,NextY].occupied = true;
-        tilescript.NodesGrid[CurNodeX,CurNodeY].occupied = false;
+        tilescript.NodesGrid[NextX,NextY].SetOccupied(true, gameObject);
+        tilescript.NodesGrid[CurNodeX,CurNodeY].SetOccupied(false,null);
         TileMover.MoveToPoint(TargetPos);
         
     }
@@ -155,7 +155,7 @@ public class Player : MonoBehaviour
 
         BulletScript bullet = newBullet.GetComponent<BulletScript>();
 
-        bullet.Initialize(transform.forward);
+        bullet.Initialize(transform.forward, gameObject);
         newBullet.transform.rotation = transform.rotation;
     }
 

@@ -9,8 +9,8 @@ public class AStarPathfinding : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-       // TilesScript= GameObject.Find("Tiles").GetComponent<Tiles>();
-        TilesScript= GameObject.Find("Terrain").GetComponent<Tiles>();
+        TilesScript= GameObject.Find("Tiles").GetComponent<Tiles>();
+       // TilesScript= GameObject.Find("Terrain").GetComponent<Tiles>();
     }
 
     // Update is called once per frame
@@ -127,8 +127,11 @@ public class AStarPathfinding : MonoBehaviour
             foreach (Node CurrentNodeNeighbour in GetNodeNeighbours(CurrentNode))
             {
 
-                bool shouldSkip = CurrentNodeNeighbour.nodeTyoe == NodeType.Untraversable || CurrentNodeNeighbour.occupied || ExploredNodes.Contains(CurrentNodeNeighbour);
-                //bool occupied = true;
+                bool shouldSkip = CurrentNodeNeighbour.nodeTyoe == NodeType.Untraversable || ExploredNodes.Contains(CurrentNodeNeighbour);
+                bool occupied = true;
+
+                if(CurrentNodeNeighbour.Occupier == gameObject || CurrentNodeNeighbour.occupied == false) { occupied = false; }
+
 
                 //if (CurrentNodeNeighbour.occupied)
                 //{
@@ -144,7 +147,7 @@ public class AStarPathfinding : MonoBehaviour
                 //}
                 bool isGoal = EndNode == CurrentNodeNeighbour;
 
-                if (!isGoal && shouldSkip)
+                if (!isGoal && shouldSkip && !occupied)
                 {
                     continue;
                 }

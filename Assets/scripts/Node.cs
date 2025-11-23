@@ -14,6 +14,7 @@ public class Node
     public NodeType nodeTyoe;
 
     public bool occupied;
+    public GameObject Occupier;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -57,6 +58,21 @@ public class Node
     public int GetFcost()
     {
         return gCost + hCost + traversalPenalty;
+    }
+
+    public void SetOccupied(bool occupied, GameObject occupier)
+    {
+        if (occupied)
+        {
+            this.occupied = true;
+            this.Occupier = occupier;
+
+        }
+        else
+        {
+            this.occupied = false;
+            this.Occupier = null;
+        }
     }
 }
 

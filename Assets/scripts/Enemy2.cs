@@ -3,9 +3,12 @@ using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.UIElements;
 
 public class Enemy2 : EnemyBase
@@ -32,6 +35,20 @@ public class Enemy2 : EnemyBase
 
     float SearchTimer;
 
+    public GameObject PlayerLastSeenPrefab;
+    GameObject PlayerLastSeenObject;
+
+    List<Node> PotentialRetreatPoints = new List<Node>();
+
+    float RetreatProbability;
+    float RetreatChoice = -1;
+
+    float LookAroundSpeed = 100;
+    float LookAroundProgress = 0;
+
+    Quaternion idleStartRot;
+    float idleTimer = 0;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -39,12 +56,16 @@ public class Enemy2 : EnemyBase
         TileMover = GetComponent<TileMovement>();
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
         capsuleCollider = GetComponent<CapsuleCollider>();
-        //tiles = GameObject.Find("Tiles").GetComponent<Tiles>();
-        tiles = GameObject.Find("Terrain").GetComponent<Tiles>();
+        tiles = GameObject.Find("Tiles").GetComponent<Tiles>();
+        //tiles = GameObject.Find("Terrain").GetComponent<Tiles>();
         vision = GetComponent<Vision>();
         AgentInfo = transform.Find("AgentInfo").gameObject;
 
-        tiles.GetNodeFromWorldPosition(transform.position).occupied = true;
+        tiles.GetNodeFromWorldPosition(transform.position).SetOccupied(true, gameObject);
+
+
+        CurrentSuperState = SuperStates.Explore;
+        CurrentState = EnemyStates.Explore_Idle;
     }
 
     // Update is called once per frame
@@ -57,7 +78,7 @@ public class Enemy2 : EnemyBase
         if(Input.GetKeyDown(KeyCode.Alpha1))
         {
             StartPatrol();
-            CurrentState = EnemyStates.Patrol;
+            CurrentState = EnemyStates.Explore_Patrol;
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
         {
@@ -66,13 +87,20 @@ public class Enemy2 : EnemyBase
         if (Input.GetKeyDown(KeyCode.Alpha3))
         {
             StartChase();
-            CurrentState = EnemyStates.Chase;
+            CurrentState = EnemyStates.Alert_Chase;
 
         }
         if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            StartSearch();
-            CurrentState = EnemyStates.Search;
+           // StartSearch();
+           // CurrentState = EnemyStates.Alert_Search;
+            ChangeState(EnemyStates.Alert_Search, SuperStates.Alert);
+
+
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            ChangeState(EnemyStates.Combat_Retreat, SuperStates.Combat);
 
         }
         repathTimer += Time.deltaTime;
@@ -83,28 +111,27 @@ public class Enemy2 : EnemyBase
             //ChasePlayer();
         }
 
+        CanSeePlayer = vision.CanSeeGameObject(player.gameObject);
 
-        if (vision.CanSeeGameObject(player.gameObject))
-        {
-            TimeSinceSeenPlayer = 0f;
-            PlayerLastSeenLocation = player.transform.position;
-
-            if (CurrentState != EnemyStates.Chase)
-            {
-                ChangeState(EnemyStates.Chase);
-            }
-        }
-        else
+        if (!CanSeePlayer)
         {
             TimeSinceSeenPlayer += Time.deltaTime;
         }
-        Debug.Log(TimeSinceSeenPlayer);
+        else
+        {
+            SawPlayer();
+        }
+           // Debug.Log(CanSeePlayer);
 
-        FollowPath();
+            //Debug.Log(TimeSinceSeenPlayer);
+
+            FollowPath();
 
         float DistanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
 
-        //if(DistanceToPlayer < 15)
+        RetreatProbability = 1 - ((float)Health / (float)MaxHealth);
+
+/*        //if(DistanceToPlayer < 15)
         //{
         //    if (Time.time > NextAttack)
         //    {
@@ -113,44 +140,63 @@ public class Enemy2 : EnemyBase
         //    }
         //}
 
-        switch (CurrentState)
+        //switch (CurrentState)
+        //{
+        //    case EnemyStates.Idle:
+        //        Idle();
+        //        break;
+
+
+
+        //    case EnemyStates.Patrol:
+        //        PatrolUpdate();
+        //        break;
+
+
+        //    case EnemyStates.Chase:
+        //        ChaseUpdate();
+        //        break;
+
+
+        //    case EnemyStates.Attacking:
+
+        //        break;
+
+
+        //    case EnemyStates.Search:
+        //        SearchUpdate();
+        //        break;
+
+
+        //    case EnemyStates.Retreat:
+        //        RetreatUpdate();
+        //        break;
+
+
+        //}*/
+
+
+        switch (CurrentSuperState)
         {
-            case EnemyStates.Idle:
-                Idle();
+            case SuperStates.Explore:
+                ExplorationUpdate();
                 break;
 
-
-
-            case EnemyStates.Patrol:
-                PatrolUpdate();
+            case SuperStates.Alert:
+                AlertUpdate();
                 break;
 
-
-            case EnemyStates.Chase:
-                ChaseUpdate();
+            case SuperStates.Combat:
+                CombatUpdate();
                 break;
-
-
-            case EnemyStates.Attacking:
-
-                break;
-
-
-            case EnemyStates.Search:
-                SearchUpdate();
-                break;
-
-
-            case EnemyStates.Retreat:
-
-                break;
-
-
         }
+
 
         AgentInfo.transform.rotation = Camera.main.transform.rotation;
         AgentInfo.transform.Find("StateText").transform.GetComponent<TextMeshPro>().text = "State: " + CurrentState.ToString();
         AgentInfo.transform.Find("HealthText").transform.GetComponent<TextMeshPro>().text = "Health: " + Health.ToString();
+
+     //   Debug.Log("tIMESINCESEENPLAYER: "+ TimeSinceSeenPlayer);
 
     }
 
@@ -176,45 +222,105 @@ public class Enemy2 : EnemyBase
         Node targetNode = CurrentPath[0];
         Vector3 targetPos = targetNode.worldPos + Vector3.up * capsuleCollider.height / 2f;
 
-        //float DistanceToPathPoint = Vector3.Distance(transform.position, CurrentPath[0].worldPos);
-        //Vector3 MoveDirection = CurrentPath[0].worldPos - StartPos;
-        //MoveDirection.y = CurrentPath[0].worldPos.y;
-        ////MoveDirection += transform.position;
-        ///
-        // if (DistanceToPathPoint > .1f)
         {
             if (!TileMover.moving)
             {
-                //TileMover.MoveInDirection(MoveDirection.normalized * 1f);
 
-                tiles.GetNodeFromWorldPosition(targetPos).occupied = true;
-                tiles.GetNodeFromWorldPosition(transform.position).occupied = false;
+                tiles.GetNodeFromWorldPosition(transform.position).SetOccupied(false, gameObject);
+                tiles.GetNodeFromWorldPosition(targetPos).SetOccupied(true, gameObject);
+
                 TileMover.MoveToPoint(targetPos);
                 StartPos = transform.position;
             }
         }
 
     }
-    public void StartChase()
+
+    void ExplorationUpdate()
     {
-        Debug.Log("START CHASE");
-        Vector3 playerPos = player.transform.position;
-        CurrentPath = Pathfinder.GetPath(transform.position, playerPos);
-        TileMover.movementSpeed = 6;
+        switch (CurrentState)
+        {
+            case EnemyStates.Explore_Idle:
+                IdleUpdate();
+                break;
 
-        // StartPos = transform.position;
+            case EnemyStates.Explore_Patrol:
+                PatrolUpdate();
+                break;
 
+        }
+        if (CanSeePlayer)
+        {        Debug.Log("Seeplayer");
 
+            ChangeState(EnemyStates.Alert_Chase, SuperStates.Alert);
+        }
+    }
 
-        //if (!TileMover.moving)
-        //{
-        //    CurrentPath = Pathfinder.GetPath(transform.position, GameObject.FindWithTag("Player").transform.position);
-        //    StartPos = transform.position;
-        //    Vector3 p = transform.position;
-        //    p.x = CurrentPath[0].worldPos.x;
-        //    p.z = CurrentPath[0].worldPos.z;
-        //    transform.position = p;
-        //}
+    void AlertUpdate()
+    {
+        if (TimeSinceSeenPlayer > 5)
+        {
+            if (CurrentState == EnemyStates.Alert_LookAround || CurrentState == EnemyStates.Alert_Search) { }
+            else
+            {
+                ChangeState(EnemyStates.Alert_LookAround, SuperStates.Alert);
+            }
+            
+        }
+
+        switch (CurrentState)
+        {
+            case EnemyStates.Alert_Search:
+                SearchUpdate();
+                break;
+
+            case EnemyStates.Alert_LookAround:
+                LookAroundUpdate();
+                break;
+
+            case EnemyStates.Alert_Chase:
+                ChaseUpdate();
+                break;
+
+        }
+
+        if (TimeSinceSeenPlayer < .1f)
+        {
+            if (CurrentState == EnemyStates.Alert_Search || CurrentState == EnemyStates.Alert_LookAround)
+            {
+                ChangeState(EnemyStates.Alert_Chase, SuperStates.Alert);
+            }
+            return;
+        }
+        
+
+    }
+
+    void LookAroundUpdate()
+    {
+        float step = LookAroundSpeed * Time.deltaTime;
+
+        transform.Rotate(0, step, 0);
+
+        LookAroundProgress += step;
+
+       // Debug.Log(LookAroundProgress);
+
+        if (LookAroundProgress >= 360f)
+        {
+            ChangeState(EnemyStates.Alert_Search, SuperStates.Alert);
+        }
+    }
+   
+
+    void SawPlayer()
+    {
+        TimeSinceSeenPlayer = 0f;
+        PlayerLastSeenLocation = player.transform.position;
+
+        Destroy(PlayerLastSeenObject);
+        PlayerLastSeenObject = GameObject.Instantiate(PlayerLastSeenPrefab, player.transform.position, player.transform.rotation);
+
     }
 
     public void TileMoveFinished()
@@ -226,8 +332,8 @@ public class Enemy2 : EnemyBase
         {
             switch (CurrentState)
             {
-                case EnemyStates.Patrol:
-                    StartCoroutine(Wait());
+                case EnemyStates.Explore_Patrol:
+                    StartCoroutine(Wait(.5f));
 
                     StartPatrol();
                     break;
@@ -235,14 +341,48 @@ public class Enemy2 : EnemyBase
         }
     }
 
-    void Idle()
+    void IdleUpdate()
     {
+        float lookAmount = Mathf.Sin(Time.time * 3f) * 45;
 
+        Quaternion offset = Quaternion.Euler(0, lookAmount, 0);
+
+        transform.rotation = idleStartRot * offset;
+
+        idleTimer += Time.deltaTime;
+
+        if(idleTimer > 3)
+        {
+            ChangeState(EnemyStates.Explore_Patrol, SuperStates.Explore);
+        }
     }
 
+    void StartIdle()
+    {
+        Stop();
+        Node n = vision.GetFurthestVisibleNode();
+        if ((n==null))
+        {
+            return;
+        }
+        Vector3 FurthestNode = n.worldPos;
+        FurthestNode.y = 0;
+        Vector3 me = transform.position;
+        me.y = 0;
+
+        Vector3 LookDir = (FurthestNode - me).normalized;
+
+        transform.rotation = Quaternion.LookRotation(LookDir);
+
+        idleStartRot = transform.rotation;
+        idleTimer = 0;
+        //GameObject m = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        //m.transform.position = FurthestNode;
+    }
 
     void StartPatrol()
     {
+
         Transform PatrolPoints = GameObject.Find("PatrolPoints").transform;
 
         List<Transform> Point = new List<Transform>();
@@ -257,8 +397,6 @@ public class Enemy2 : EnemyBase
 
         Vector3 RandomOffset = Random.insideUnitSphere * 2;
        
-      //  Pathfinder.GetPath(transform.position, randomPatrolPoint.position + RandomOffset)
-
         Transform randomPatrolPoint = Point[Random.Range(0, Point.Count)];
 
         Node TargetNode = tiles.GetNodeFromWorldPosition(randomPatrolPoint.position + RandomOffset);
@@ -273,37 +411,251 @@ public class Enemy2 : EnemyBase
         StartPos = transform.position;
         CurrentPatrolPoint = randomPatrolPoint;
 
-        TileMover.movementSpeed = 3;
-
     }
 
     void PatrolUpdate()
     {
+        if(CurrentPatrolPoint == null) { StartPatrol(); }
+
         if (Vector3.Distance(transform.position, CurrentPatrolPoint.position) < 0.5f)
         {
             StartPatrol();
         }
 
-        if (PlayerVisible())
+    }
+   
+
+    void StartSearch()
+    {
+        List<(Node node, float weight)> candidates = new List<(Node, float)>();
+
+
+        for (int i = 0; i < 40; i++)
         {
-            ChangeState(EnemyStates.Chase);
-            StartChase();
+            Vector3 offset = Random.insideUnitSphere * 20;
+            offset.y = 0;
+
+            Vector3 testPos = PlayerLastSeenLocation + offset;
+            Node node = tiles.GetNodeFromWorldPosition(testPos);
+
+            if (node.nodeTyoe == NodeType.Untraversable)
+                continue;
+
+            float distance = Vector3.Distance(testPos, PlayerLastSeenLocation);
+
+            float weight = 1f / (1f + distance);
+
+            candidates.Add((node, weight));
         }
+
+        if (candidates.Count == 0)
+        {
+            ChangeState(EnemyStates.Explore_Patrol, SuperStates.Explore);
+            return;
+        }
+
+        // Weighted random pick
+        float total = candidates.Sum(c => c.weight);
+        float roll = Random.value * total;
+        float cumulative = 0f;
+
+        Node picked = null;
+
+        foreach (var c in candidates)
+        {
+            cumulative += c.weight;
+            if (roll <= cumulative)
+            {
+                picked = c.node;
+                break;
+            }
+        }
+
+        if (picked == null)
+        {
+            picked = candidates[0].node;
+        }
+
+        CurrentPath = Pathfinder.GetPath(transform.position, picked.worldPos);
+
+
+
+
+
+        /*
+                Vector3 RandomPoint = Vector3.zero;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    Vector3 RandomOffset = Random.insideUnitSphere*20;
+                    RandomOffset.y = 0;
+
+                    RandomPoint = PlayerLastSeenLocation + RandomOffset;
+
+                    Node node = tiles.GetNodeFromWorldPosition(RandomPoint);
+
+                    if (node.nodeTyoe != NodeType.Untraversable)
+                    {
+                        break;
+                    }
+
+                }
+
+
+                CurrentPath = Pathfinder.GetPath(transform.position, RandomPoint);
+                TileMover.movementSpeed = 4;*/
+
+    }
+
+    void SearchUpdate()
+    {
+        if (SearchTimer > 15)
+        {
+            SearchTimer = 0;
+            TimeSinceSeenPlayer = 999999;
+            ChangeState(EnemyStates.Explore_Patrol, SuperStates.Explore);
+            Destroy(PlayerLastSeenObject);
+            return;
+        }
+
+        SearchTimer += Time.deltaTime;
+
+        Debug.Log(SearchTimer.ToString());
+
+        if (CurrentPath.Count == 0)
+        {
+            StartCoroutine(Wait(.5f));
+            StartSearch();
+        }      
+    }
+
+    void ExitSuperState(SuperStates oldSuperState)
+    {
+        switch (oldSuperState)
+        {
+            case SuperStates.Alert:
+                break;
+        }
+    }
+
+    void EnterSuperState(SuperStates newSuperState)
+    {
+        switch (newSuperState)
+        {
+            case SuperStates.Explore:
+                TileMover.movementSpeed = 3;
+                setColour(Color.green);
+                break;
+
+            case SuperStates.Alert:
+                TileMover.movementSpeed = 4;
+                setColour(Color.yellow);
+                break;
+
+            case SuperStates.Combat:
+                TileMover.movementSpeed = 5;
+                setColour(Color.red);
+                break;
+        }
+
+    }
+
+    void ChangeState(EnemyStates NewState, SuperStates NewSuperState)
+    {
+
+
+        if (NewSuperState != CurrentSuperState)
+        {
+            ExitSuperState(CurrentSuperState);
+            EnterSuperState(NewSuperState);
+            CurrentSuperState = NewSuperState;
+        }
+
+        CurrentState = NewState;
+        RetreatChoice = Random.value;
+
+        switch (NewState)
+        {
+            case EnemyStates.Explore_Idle: StartIdle(); break;
+            case EnemyStates.Explore_Patrol: StartPatrol(); break;
+            case EnemyStates.Alert_Search: StartSearch(); break;
+            case EnemyStates.Alert_Chase: StartChase(); break;
+            case EnemyStates.Combat_Attacking: StartAttack(); break;
+            case EnemyStates.Combat_Retreat: StartRetreat(); break;
+            case EnemyStates.Alert_LookAround: StartLookAround(); break;
+        }
+
+        return;
+
+    }
+
+    void StartLookAround()
+    {
+        Stop();
+
+        LookAroundProgress = 0;
+    }
+
+    public void StartChase()
+    {
+        Debug.Log("START CHASE");
+        Vector3 playerPos = player.transform.position;
+        CurrentPath = Pathfinder.GetPath(transform.position, playerPos);
     }
 
     void ChaseUpdate()
     {
-        if(TimeSinceSeenPlayer > 3)
+        float distToPlayer = Vector3.Distance(transform.position, player.transform.position);
+
+        if (distToPlayer > 5 || TimeSinceSeenPlayer > 1f)
         {
-            Stop();
-            ChangeState(EnemyStates.Search);
-            return;
+            StartChase();
         }
-        //if(Vector3.Distance(transform.position, player.transform.position) < 10 && TimeSinceSeenPlayer < 1)
-        if(Vector3.Distance(transform.position, player.transform.position) < 10 && TimeSinceSeenPlayer < 1)
+        else 
         {
             Stop();
 
+            if (RetreatChoice < RetreatProbability)
+            {
+                ChangeState(EnemyStates.Combat_Retreat, SuperStates.Combat);
+            }
+            else
+            {
+                ChangeState(EnemyStates.Combat_Attacking, SuperStates.Combat);
+            }
+        }
+        return;
+    }
+
+    void CombatUpdate()
+    {
+        switch (CurrentState)
+        {
+            case EnemyStates.Combat_Retreat:
+                RetreatUpdate();
+                break;
+
+            case EnemyStates.Combat_Attacking:
+                AttackUpdate();
+                break;
+
+        }
+
+        if (TimeSinceSeenPlayer > 3 || Vector3.Distance(transform.position, player.transform.position) > 10)
+        {
+            if (CurrentState == EnemyStates.Combat_Attacking)
+            {
+                ChangeState(EnemyStates.Alert_Chase, SuperStates.Alert);
+            }
+            return;
+        }
+
+    }
+
+    void AttackUpdate()
+    {
+        if(CanSeePlayer)
+        {
             Vector3 playerpos = player.transform.position;
             playerpos.y = 0;
             Vector3 me = transform.position;
@@ -316,90 +668,136 @@ public class Enemy2 : EnemyBase
             if (Time.time > NextAttack)
             {
                 NextAttack = Time.time + AttackRate;
-                //  Shoot(player.transform.position);
                 Shoot(player.transform.position);
                 Debug.Log("SHOOT");
 
             }
         }
-        else
-        {
-            StartChase();
-        }
+
     }
 
-    void StartSearch()
+    void StartAttack()
     {
+        Debug.Log("StartAttack");
 
-        Vector3 RandomPoint = Vector3.zero;
+        Stop();
+    }
 
-        for (int i = 0; i < 100; i++)
+    void StartRetreat()
+    {
+        TileMover.movementSpeed = 7;
+
+        List<Node> candidates = new List<Node>();
+
+        Node myNode = tiles.GetNodeFromWorldPosition(transform.position);
+        int searchRadius = 20;
+
+        // --- STEP 1: Populate candidates ---
+        for (int x = -searchRadius; x <= searchRadius; x++)
         {
-            Vector3 RandomOffset = Random.insideUnitSphere*20;
-            RandomOffset.y = 0;
-
-            RandomPoint = PlayerLastSeenLocation + RandomOffset;
-
-            Node node = tiles.GetNodeFromWorldPosition(RandomPoint);
-
-            if (node.nodeTyoe != NodeType.Untraversable)
+            for (int y = -searchRadius; y <= searchRadius; y++)
             {
-                break;
+                int nx = myNode.GridPos.x + x;
+                int ny = myNode.GridPos.y + y;
+
+                // Bounds check
+                if (nx < 0 || ny < 0 || nx >= tiles.GridSize || ny >= tiles.GridSize)
+                    continue;
+
+                Node n = tiles.NodesGrid[nx, ny];
+
+                if (n.nodeTyoe == NodeType.Untraversable)
+                    continue;
+
+                if (n.occupied)
+                    continue;
+
+                if (CanPlayerSeePosition(n.worldPos))
+                    continue;
+
+                candidates.Add(n);
+            }
+        }
+
+        // No candidates? fall back
+        if (candidates.Count == 0)
+        {
+            Debug.LogWarning("No retreat nodes found. Falling back.");
+            Destroy(gameObject);
+            ChangeState(EnemyStates.Explore_Idle, SuperStates.Explore);
+            return;
+        }
+
+        // --- STEP 2: Utility scoring ---
+        Node bestNode = null;
+        float bestScore = Mathf.NegativeInfinity;
+
+        foreach (Node n in candidates)
+        {
+            //List<Node> path = Pathfinder.GetPath(transform.position, n.worldPos);
+            //if (path.Count == 0) continue;
+
+            float distanceScore = Vector3.Distance(n.worldPos, player.transform.position);
+            int coverScore =1;
+
+            float utility = distanceScore * 1.5f + coverScore * 3f;
+
+            if (utility > bestScore)
+            {
+                bestScore = utility;
+                bestNode = n;
+            }
+        }
+
+        // Path found?
+        if (bestNode != null)
+        {
+            CurrentPath = Pathfinder.GetPath(transform.position, bestNode.worldPos);
+            GameObject n = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            n.transform.position = bestNode.worldPos;
+            Debug.Log("Retreating to best utility node: " + bestNode.GridPos);
+            return;
+        }
+
+        // Final fallback
+        Debug.LogWarning("No valid retreat path found.");
+        ChangeState(EnemyStates.Explore_Idle, SuperStates.Explore);
+    }
+
+
+    void RetreatUpdate()
+    {
+        if (CurrentPath.Count > 0)
+        {
+            return;
+        }
+        else
+        {
+            ChangeState(EnemyStates.Explore_Idle, SuperStates.Explore);
+
+        }
+
+        if (CanPlayerSeeMe() && CanSeePlayer)
+        {
+            RetreatChoice = Random.value;
+            if (RetreatChoice < RetreatProbability)
+            {
+                StartRetreat();
+            }
+            else
+            {
+                ChangeState(EnemyStates.Combat_Attacking, SuperStates.Combat);
             }
 
         }
-        
-
-        CurrentPath = Pathfinder.GetPath(transform.position, RandomPoint);
-        TileMover.movementSpeed = 4;
-
-    }
-
-    void SearchUpdate()
-    {
-        if(CurrentPath.Count == 0)
-        {
-            StartSearch();
-        }
-
-        SearchTimer += Time.deltaTime;
-
-        if (SearchTimer > 15)
-        {
-            SearchTimer = 0;
-            ChangeState(EnemyStates.Patrol);
-            return;
-        }
-    }
-
-    void ChangeState(EnemyStates NewState)
-    {
-        switch (NewState)
-        {
-            case EnemyStates.Chase:
-                StartChase();
-                break;
-
-            case EnemyStates.Search:
-                StartSearch();
-                break;
-        }
-        CurrentState = NewState;
-    }
-
-    bool PlayerVisible()
-    {
-        bool Visible = false;
-
-        return Visible;
     }
 
 
-    IEnumerator Wait()
+    IEnumerator Wait(float time)
     {
         Waiting = true;
 
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(time);
 
         Waiting = false;
 
@@ -408,6 +806,43 @@ public class Enemy2 : EnemyBase
     void Stop()
     {
         CurrentPath.Clear();
+    }
+
+
+    void setColour(Color newColor)
+    {
+        GetComponent<Renderer>().material.color = newColor;
+
+        foreach (Transform t in transform.Find("Arms"))
+        {
+            t.GetComponent<Renderer>().material.color = newColor;
+        }
+    }
+
+
+    public override void TakeDamage(int damage)
+    {
+        base.TakeDamage(damage);
+
+        Vector3 playerpos = player.transform.position;
+        playerpos.y = 0;
+        Vector3 me = transform.position;
+        me.y = 0;
+
+        Vector3 LookDir = (playerpos - me).normalized;
+
+        transform.rotation = Quaternion.LookRotation(LookDir);
+
+
+        RetreatChoice = Random.value;
+        if (RetreatChoice < RetreatProbability)
+        {
+            ChangeState(EnemyStates.Combat_Retreat, SuperStates.Combat);
+        }
+        else
+        {
+            ChangeState(EnemyStates.Combat_Attacking, SuperStates.Combat);
+        }
     }
 
     private void OnDrawGizmos()
@@ -449,6 +884,18 @@ public class Enemy2 : EnemyBase
                     }
                 }
             }
-        } 
+        }
+
+        if (PotentialRetreatPoints.Count > 0)
+        {
+
+            foreach (Node n in PotentialRetreatPoints)
+            {
+                Gizmos.color = Color.magenta;
+
+                Gizmos.DrawCube(n.worldPos, Vector3.one * 1f * .9f);
+
+            }
+        }
     }
 }

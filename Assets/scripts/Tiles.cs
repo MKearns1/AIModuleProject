@@ -32,7 +32,7 @@ public class Tiles : MonoBehaviour
     }
     private void Awake()
     {
-       // GenerateGrid();
+       GenerateGrid();
 
     }
     // Update is called once per frame
@@ -245,7 +245,7 @@ public class Tiles : MonoBehaviour
                         //{
                         //    Gizmos.color = Color.black;
                         //}
-                        Gizmos.DrawCube(pos, scale * .9f);
+                        Gizmos.DrawCube(pos, scale * .7f);
                     }
                 }
 

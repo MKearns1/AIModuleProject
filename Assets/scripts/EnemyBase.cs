@@ -6,10 +6,13 @@ public class EnemyBase : MonoBehaviour
     public float AttackRate = 1f;
     public float NextAttack;
     public int Health = 5;
+    public int MaxHealth = 5;
     public GameObject BulletPrefab;
     public Transform BulletSpawnPos;
+    public SuperStates CurrentSuperState;
     public EnemyStates CurrentState;
     protected Vision vision;
+    protected bool CanSeePlayer;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -33,7 +36,7 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
-    public void TakeDamage(int amount)
+    public virtual void TakeDamage(int amount)
     {
         Health -= amount;
         if (Health <= 0)
@@ -60,14 +63,59 @@ public class EnemyBase : MonoBehaviour
         //bullet.Initialize(transform.forward);
         newBullet.transform.rotation = transform.rotation;
     }
+
+
+    public bool CanPlayerSeePosition(Vector3 Position)
+    {
+        Vector3 Dir = (Position - player.transform.position).normalized;
+        float Dist = Vector3.Distance(Position, player.transform.position);
+
+        if(Physics.Raycast(player.transform.position, Dir, out RaycastHit hit, Dist*100))
+        {
+            if (hit.collider.gameObject.tag == "Ground")
+            {
+                return true;
+
+            }
+            return false;
+
+        }
+        return true;
+    }
+
+    public bool CanPlayerSeeMe()
+    {
+        Vector3 Dir = (transform.position - player.transform.position).normalized;
+        float Dist = Vector3.Distance(transform.position, player.transform.position);
+
+        if (Physics.Raycast(player.transform.position, Dir, out RaycastHit hit, Dist))
+        {
+            if (hit.collider.gameObject == this.gameObject)
+            {
+                return true;
+
+            }
+            return false;
+
+        }
+        return false;
+    }
 }
 
 public enum EnemyStates
 {
-    Idle,
-    Patrol,
-    Chase,
-    Attacking,
-    Retreat,
-    Search,
+    Explore_Idle,
+    Explore_Patrol,
+    Alert_Chase,
+    Combat_Attacking,
+    Combat_Retreat,
+    Alert_Search,
+    Alert_LookAround
+}
+
+public enum SuperStates
+{
+    Explore,
+    Alert,
+    Combat,
 }

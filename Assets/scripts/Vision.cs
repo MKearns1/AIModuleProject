@@ -1,6 +1,8 @@
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem.XR;
+using System.Collections.Generic;
+using UnityEngine.UIElements;
 
 public class Vision : MonoBehaviour
 {
@@ -24,29 +26,112 @@ public class Vision : MonoBehaviour
 
     public bool CanSeeGameObject(GameObject target)
     {
+        Transform eyes = VisionStartPoint;
 
-        Vector3 Direction = (target.transform.position - VisionStartPoint.position).normalized;
+        Vector3 targetPos = target.transform.position + Vector3.up * 1.0f;
+        Vector3 eyePos = eyes.position + Vector3.up * 0.2f;
 
-        if (Vector3.Angle(VisionStartPoint.forward, Direction) > viewAngle / 2f)
+        Vector3 direction = (targetPos - eyePos).normalized;
+
+        Vector3 flatDir = targetPos - eyePos;
+        flatDir.y = 0;
+        if (Vector3.Angle(eyes.forward, flatDir) > viewAngle / 2f)
             return false;
 
-        float dist = Vector3.Distance(VisionStartPoint.position, target.transform.position);
+        float dist = Vector3.Distance(eyePos, targetPos);
         if (dist > viewDistance)
             return false;
 
-        if (Physics.Raycast(VisionStartPoint.position, Direction, out RaycastHit hit, viewDistance, obstacleMask))
+        if (Physics.Raycast(eyePos, direction, out RaycastHit hit, viewDistance))
         {
-            return false;
+            if (hit.collider.gameObject != target)
+            {
+                Debug.Log(hit.collider.gameObject);
 
-        }
-        if (Physics.Raycast(VisionStartPoint.position, Direction, out RaycastHit hit1, viewDistance))
-        {
-            if (hit1.collider.gameObject == target)
+                return false;
+            }
+            else
+            {
+               // Debug.Log(hit.collider.gameObject);
+
                 return true;
+            }
         }
 
-            return false;
+
+        return false;
     }
+
+
+    public Node GetFurthestVisibleNode()
+    {
+        Tiles tilescript = GameObject.Find("Tiles").GetComponent<Tiles>();
+
+        int xRange = 10;
+        int yRange = 10;
+
+        Node furthestNode = null;
+        float FurthestPoint = 0f;
+
+        Node myNode = tilescript.GetNodeFromWorldPosition(transform.position);
+
+        for (int dx = -xRange; dx <= xRange; dx++)
+        {
+            for (int dy = -yRange; dy <= yRange; dy++)
+            {
+                int x = myNode.GridPos.x + dx;
+                int y = myNode.GridPos.y + dy;
+
+                // Correct bounds check
+                if (x < 0 || y < 0 || x >= tilescript.GridSize || y >= tilescript.GridSize)
+                    continue;
+
+                Node target = tilescript.NodesGrid[x, y];
+
+                if (target.nodeTyoe == NodeType.Untraversable)
+                    continue;
+
+                float curDist = Vector3.Distance(target.worldPos, transform.position);
+
+                // Path must exist
+                //List<Node> PathToNode = GetComponent<AStarPathfinding>().GetPath(transform.position, target.worldPos);
+                //if (PathToNode.Count == 0)
+                //    continue;
+
+                // Visibility check
+                Vector3 dir = (target.worldPos - VisionStartPoint.position).normalized;
+                float dist = Vector3.Distance(VisionStartPoint.position, target.worldPos);
+
+                if (Physics.Raycast(VisionStartPoint.position, dir, dist))
+                    continue;
+
+                // Pick furthest visible node
+                if (curDist > FurthestPoint)
+                {
+                    FurthestPoint = curDist;
+                    furthestNode = target;
+                }
+            }
+        }
+
+        return furthestNode;
+    }
+
+
+    public int CountCoverLayers(Vector3 target)
+    {
+        int layers = 0;
+        Vector3 dir = (VisionStartPoint.position - target).normalized;
+        float dist = Vector3.Distance(VisionStartPoint.position, target);
+
+        if (Physics.Raycast(VisionStartPoint.position, dir, out RaycastHit hit, dist))
+        {
+            layers++;
+        }
+        return layers;
+    }
+
+
 
     void OnDrawGizmos()
     {

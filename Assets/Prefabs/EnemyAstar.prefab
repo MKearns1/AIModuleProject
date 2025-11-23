@@ -377,7 +377,9 @@ MonoBehaviour:
   Health: 5
   BulletPrefab: {fileID: 5129902741809793479, guid: bc3e4a31374ab0c44b7991767f0a9b39, type: 3}
   BulletSpawnPos: {fileID: 8901828794391091856}
+  CurrentSuperState: 0
   CurrentState: 0
+  PlayerLastSeenPrefab: {fileID: 8027265933734710449, guid: b7caf0d5087afef45baede7472b1b5ec, type: 3}
 --- !u!114 &2777446508711726253
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1252,7 +1254,7 @@ Transform:
   m_GameObject: {fileID: 8676910202167786455}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: 0.75}
+  m_LocalPosition: {x: 0, y: 2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1398,7 +1400,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8801186697224427689, guid: 22c3bee3b09054d41bee21af837dc1b7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 8801186697224427689, guid: 22c3bee3b09054d41bee21af837dc1b7, type: 3}
       propertyPath: m_LocalPosition.z
