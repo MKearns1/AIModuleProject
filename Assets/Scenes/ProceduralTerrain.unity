@@ -220,6 +220,8 @@ MonoBehaviour:
   f: 0.13
   exponent: 1
   heightMultiplier: 30
+  Octaves: 0
+  Amplititude: 0
   Colors:
     serializedVersion: 2
     key0: {r: 0.8113208, g: 0.738238, b: 0.45770738, a: 1}
@@ -250,6 +252,9 @@ MonoBehaviour:
     m_ColorSpace: -1
     m_NumColorKeys: 6
     m_NumAlphaKeys: 2
+  Noises:
+  - Amplititude: 0
+    Octaves: 0
 --- !u!64 &403963672
 MeshCollider:
   m_ObjectHideFlags: 0

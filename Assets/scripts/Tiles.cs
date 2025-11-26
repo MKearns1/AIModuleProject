@@ -16,6 +16,8 @@ public class Tiles : MonoBehaviour
 
     public TerrainTypes TerrainData;
 
+    float scentDecayRate = .05f;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -41,6 +43,14 @@ public class Tiles : MonoBehaviour
         // Debug.Log(NodesGrid.GetLength(0).ToString() + " "+NodesGrid.GetLength(1).ToString());
 
         //transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, GameObject.Find("Player").transform.position);
+
+        foreach (var node in NodesGrid)
+        {
+            if(node.PlayerScentStrength > 0)
+            {
+                node.PlayerScentStrength -= Time.deltaTime * scentDecayRate;
+            }
+        }
     }
 
     GameObject CreateTile(Vector3 Position)
@@ -207,7 +217,7 @@ public class Tiles : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (true) { 
+        if (false) { 
         Gizmos.DrawCube(transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2),Vector3.one);
 
             if (NodesGrid != null)
@@ -218,6 +228,7 @@ public class Tiles : MonoBehaviour
                 {
                     for (int j = 0; j < NodesGrid.GetLength(1); j++)
                     {
+
                         Vector3 pos = NodesGrid[i, j].worldPos;
                         //pos.z = pos.y;
 
@@ -245,7 +256,17 @@ public class Tiles : MonoBehaviour
                         //{
                         //    Gizmos.color = Color.black;
                         //}
-                        Gizmos.DrawCube(pos, scale * .7f);
+
+                        if (NodesGrid[i,j].PlayerScentStrength > 0)
+                        {
+                            Color color = Color.white;
+                            color *= Color.magenta * NodesGrid[i,j].PlayerScentStrength;
+
+                            Gizmos.color = color; Gizmos.DrawCube(pos, scale * .7f);
+
+                        }
+
+                        //Gizmos.DrawCube(pos, scale * .7f);
                     }
                 }
 
@@ -273,5 +294,14 @@ public class Tiles : MonoBehaviour
                 //}
             }
         }
+
+        if (true)
+        {
+
+
+
+
+        }
     }
+
 }

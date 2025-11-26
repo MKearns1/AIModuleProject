@@ -1,6 +1,7 @@
+using TreeEditor;
 using Unity.Mathematics;
 using UnityEngine;
-
+using System.Collections.Generic;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class TerrainGenerator : MonoBehaviour
@@ -18,11 +19,15 @@ public class TerrainGenerator : MonoBehaviour
     public float f;
     public float exponent = 1;
     public float heightMultiplier = 2f;
+    public float Octaves;
+    public float Amplititude;
     Color[] colours;
     float minTerrainHeight = 0f;
     float maxTerrainHeight = 0f;
     public Gradient Colors;
     Tiles tiles;
+
+    public List<FBMNoise> Noises;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -38,7 +43,7 @@ public class TerrainGenerator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(tiles == null);
+       // Debug.Log(tiles == null);
 
        remakeMesh();
     }
@@ -72,10 +77,17 @@ public class TerrainGenerator : MonoBehaviour
 
 
                 float y = combined * heightMultiplier;
+
+             //   y = FBM(x*scale, z*scale, Octaves, Amplititude) * heightMultiplier;
+                y = DomainWarp(x*scale,z*scale) * heightMultiplier;
+
+                float WN = WorleyNoise(new Vector2(x * scale, z * scale));
+                y =  WN * heightMultiplier;
+
                 vertices[i] = new Vector3(x, y, z);
 
                 float normalizedHeight = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, y);
-
+                
                 Color color = Color.blue;
                 Color colorb = Color.red;
 
@@ -169,8 +181,11 @@ public class TerrainGenerator : MonoBehaviour
             {
                 Vector2 thisCell = new Vector2(cellX + x, cellY + y);
 
-                float rx = UnityEngine.Random.Range(0f, 1f);
-                float ry = UnityEngine.Random.Range(0f, 1f);
+                //float rx = UnityEngine.Random.Range(0f, 1f);
+                //float rx = Mathf.PerlinNoise(pos.x,pos.y) + math.sin(Time.time * Mathf.PerlinNoise(pos.x, pos.y));
+                //float rx = Mathf.PerlinNoise(pos.x,pos.y);
+                float rx = Mathf.PerlinNoise(thisCell.x,thisCell.y);
+                float ry = Mathf.PerlinNoise(thisCell.x, thisCell.y);
 
                 // Random feature point inside cell
                 Vector2 featurePoint = thisCell + new Vector2(
@@ -189,4 +204,42 @@ public class TerrainGenerator : MonoBehaviour
     }
 
 
+
+    float FBM(float x, float y, float Octaves, float Amplititude)
+    {
+        float FBMnoise = 0;
+        float amp = Amplititude;
+
+        for (int i = 0; i < Octaves; i++)
+        {
+            FBMnoise += Mathf.PerlinNoise(x, y) * amp;
+            amp *= .5f;
+            x *= 2;
+            y *= 2;
+
+        }
+
+
+        return FBMnoise;
+    }
+
+    float DomainWarp(float x, float y)
+    {
+
+        
+
+        float fmb1 = FBM(x + 0,y+  0, Octaves, Amplititude);
+        float fmb2 = FBM(x+ 5.2f,y+ 1.3f, 1, 1);
+        float fmb3 = FBM(x+ 4*fmb1+1.7f,y+ 4 *fmb1 + 9.2f, 1, 1);
+        float fmb4 = FBM(x + 4 * fmb2 + 8.3f, y + 4 * fmb2 + 2.8f, 1, 1);
+
+        return FBM(fmb3, fmb4, 1, 1);
+    }
+}
+
+[System.Serializable]
+public class FBMNoise
+{
+    public float Amplititude;
+    public float Octaves;
 }

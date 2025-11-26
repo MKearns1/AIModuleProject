@@ -9,8 +9,7 @@ public class EnemyBase : MonoBehaviour
     public int MaxHealth = 5;
     public GameObject BulletPrefab;
     public Transform BulletSpawnPos;
-    public SuperStates CurrentSuperState;
-    public EnemyStates CurrentState;
+
     protected Vision vision;
     protected bool CanSeePlayer;
 
@@ -117,5 +116,23 @@ public enum SuperStates
 {
     Explore,
     Alert,
+    Combat,
+}
+
+public enum DogEnemyStates
+{
+    Idle,
+    FollowOwner,
+    Wander,
+    FollowTrail,
+    Charge,
+    Attack,
+
+}
+
+public enum DogSuperStates
+{
+    Passive,
+    Tracking,
     Combat,
 }

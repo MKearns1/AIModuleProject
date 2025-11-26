@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6405278076276890451}
   - component: {fileID: 8524005968952743799}
   m_Layer: 7
-  m_Name: Text (TMP)
+  m_Name: StateText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -221,7 +221,7 @@ GameObject:
   - component: {fileID: 9142395205414925989}
   - component: {fileID: 9014896224995197886}
   m_Layer: 7
-  m_Name: Text (TMP) (1)
+  m_Name: HealthText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

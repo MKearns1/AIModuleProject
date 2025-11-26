@@ -16,6 +16,8 @@ public class Node
     public bool occupied;
     public GameObject Occupier;
 
+    public float PlayerScentStrength;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

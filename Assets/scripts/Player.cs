@@ -66,7 +66,7 @@ public class Player : MonoBehaviour
 
         CheckInputs();
 
-        
+        tilescript.GetNodeFromWorldPosition(transform.position).PlayerScentStrength = 1;
 
 
         HealthText.transform.rotation = Camera.main.transform.rotation;

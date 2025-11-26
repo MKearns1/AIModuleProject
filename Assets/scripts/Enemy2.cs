@@ -49,6 +49,13 @@ public class Enemy2 : EnemyBase
     Quaternion idleStartRot;
     float idleTimer = 0;
 
+    public SuperStates CurrentSuperState;
+    public EnemyStates CurrentState;
+
+
+    public EnemyDog CurrentDog;
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -64,8 +71,7 @@ public class Enemy2 : EnemyBase
         tiles.GetNodeFromWorldPosition(transform.position).SetOccupied(true, gameObject);
 
 
-        CurrentSuperState = SuperStates.Explore;
-        CurrentState = EnemyStates.Explore_Idle;
+        ChangeState(EnemyStates.Explore_Idle, SuperStates.Explore);
     }
 
     // Update is called once per frame
@@ -543,7 +549,7 @@ public class Enemy2 : EnemyBase
         switch (newSuperState)
         {
             case SuperStates.Explore:
-                TileMover.movementSpeed = 3;
+                TileMover.movementSpeed = 2;
                 setColour(Color.green);
                 break;
 
