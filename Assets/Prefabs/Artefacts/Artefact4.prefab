@@ -1431,6 +1431,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 281130198715396554}
+  - component: {fileID: -3640243007203482364}
   m_Layer: 0
   m_Name: Artefact4
   m_TagString: Untagged
@@ -1467,6 +1468,18 @@ Transform:
   - {fileID: 6865007676331986207}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-3640243007203482364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7630323569118860624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abc85ef00d724b6469185e429a3ebc50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &9125793414892857227
 GameObject:
   m_ObjectHideFlags: 0

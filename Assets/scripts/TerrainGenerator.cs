@@ -19,21 +19,34 @@ public class TerrainGenerator : MonoBehaviour
     [Header("General Settings")]
     public int xSize = 26;
     public int zSize = 20;
-    [Range(0.0f, 1)] public float scale = 0.3f;
     public float heightMultiplier = 2f;
     Color[] colours;
 
 
     [Header("Perlin Noise FBM")]
-    public int Octaves;
-    public float Persistence;
-    public float Lacunarity;
+    [Range(0.0f, .2f)] public float PerlinScale = 1;
+    public int PerlinOctaves;
+    public float PerlinPersistence;
+    public float PerlinLacunarity;
+    public bool PerlinInvert;
+    [Range(0.0f, 1f)] public float PerlinStrength;
     public float IslandFalloffStrength;
 
+    [Header("WorleyNoise")]
+    [Range(0.0f, .2f)] public float WorleyScale = 1;
+    public int WorleyOctaves;
+    public float WorleyPersistence;
+    public float WorleyLacunarity;
+    public bool WorleyInvert;
+    [Range(0.0f, 1f)] public float Worleystrength;
 
-    [Header("Inland Pools")]
-    public float Water;
-    public float Water2;
+    [Header("Water")]
+    public float PoolSharpness;
+    public float PoolDepthMultiplier;
+    public float PoolScale;
+    public float IslandFactor;
+    [Range(0.0f, 1f)] public float IslandShape;
+    public float WaterHeight;
 
     [ContextMenu("Rebuild Node Grid")]
     void RebuildNodeGrid()
@@ -80,7 +93,8 @@ public class TerrainGenerator : MonoBehaviour
 
         WaterPlane = GameObject.Find("Plane");
 
-        remakeMesh(); UpdateMesh(); tiles.GenerateGridFromTerrain(null,transform); SpawnArtefacts();
+        remakeMesh(); UpdateMesh(); 
+        //tiles.GenerateGridFromTerrain(null,transform); SpawnArtefacts();
     }
 
     // Update is called once per frame
@@ -97,6 +111,9 @@ public class TerrainGenerator : MonoBehaviour
 
     void CreateShape()
     {
+        minTerrainHeight = 999999;
+        maxTerrainHeight = -999999;
+        WaterPlane.transform.position = new Vector3(0, WaterHeight, 0);
 
         vertices = new Vector3[(xSize + 1) * (zSize + 1)];
 
@@ -104,25 +121,27 @@ public class TerrainGenerator : MonoBehaviour
         {
             for (int x = 0; x <= xSize; x++)
             {
-                float PerlinBase = Mathf.PerlinNoise(x * scale, z * scale);
-                float p = Mathf.PerlinNoise(x * scale, z * scale) * 2f - 1f;
-                float ridge = 1f - Mathf.Abs(p);
-                ridge = ridge * ridge;
-
-                float Worley = WorleyNoise(new Vector2(x * scale, z * scale));
-
-                float combined = Mathf.Lerp(PerlinBase, ridge, ridge);
-
-                float y = combined * heightMultiplier;
+                float y = 0;
 
                 //y = DomainWarp(x*scale,z*scale) * heightMultiplier;
 
-                float WN = WorleyNoise(new Vector2(x * scale, z * scale));
-                float pools = 1 - (Mathf.PerlinNoise(x * scale, z * scale));
-                pools = MathF.Pow(pools, Water);
+                float WorleyFbm = FBM(x*WorleyScale, z*WorleyScale, WorleyOctaves, WorleyPersistence,WorleyLacunarity, "Worley" );
+                if (WorleyInvert) WorleyFbm = 1 - WorleyFbm;
+                WorleyFbm = Mathf.Lerp(1,WorleyFbm,Worleystrength);
+               
 
-                float fbm = FBM(x * scale, z * scale, Octaves, Persistence, Lacunarity) * heightMultiplier;
-                y = (1 - pools * Water2) * fbm;
+                float Perlinfbm = FBM(x * PerlinScale, z * PerlinScale, PerlinOctaves, PerlinPersistence, PerlinLacunarity, "Perlin");
+                Perlinfbm = Mathf.Clamp(Perlinfbm, 0f, 1);
+                if (PerlinInvert) Perlinfbm = 1 - Perlinfbm;
+                Perlinfbm = Mathf.Lerp(1, Perlinfbm, PerlinStrength);
+
+
+                float pools = Mathf.Clamp01(1 - (Mathf.PerlinNoise(x * PoolScale, z * PoolScale)));
+                pools = MathF.Pow(pools, Mathf.Max(0.0001f, PoolSharpness));
+                pools = 1 - pools * Mathf.Max(0.0001f, PoolDepthMultiplier);
+
+                y = pools * Perlinfbm * WorleyFbm * heightMultiplier;
+                //y =  Perlinfbm * WorleyFbm * heightMultiplier;
 
 
                 /*                // ---------------------------
@@ -155,23 +174,38 @@ public class TerrainGenerator : MonoBehaviour
 
                 float nx = (x - cx) / cx;
                 float nz = (z - cz) / cz;
-                float dist = Mathf.Sqrt(nx * nx + nz * nz);
+
+                float Circledist = Mathf.Sqrt(nx * nx + nz * nz);
+                float Squaredist = Mathf.Max(Mathf.Abs(nx), Mathf.Abs(nz));
+
+                float dist = Mathf.Lerp(Squaredist, Circledist, IslandShape);
 
                 float falloff = Mathf.Clamp01(Mathf.Pow(dist, IslandFalloffStrength));
+                falloff *= IslandFactor;
 
-                y = Mathf.Lerp(y, 0f, falloff);
+                if (float.IsNaN(y))
+                {
+                    y = 0;
+                }
 
-                /*                if (y < minTerrainHeight)
-                                {
-                                    minTerrainHeight = y;
-                                }
-                                else if (y > maxTerrainHeight)
-                                {
-                                    maxTerrainHeight = y;
-                                }*/
+                else
+                    y = Mathf.Lerp(y, 0f, falloff);
+
+                y = Mathf.Clamp(y, -10, 50);
+
+                if (y < minTerrainHeight)
+                {
+                    minTerrainHeight = y;
+                }
+                else if (y > maxTerrainHeight)
+                {
+                    maxTerrainHeight = y;
+                }
                 vertices[i] = new Vector3(x, y, z);
 
-                float normalizedHeight = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, y);
+                float minHeight = Mathf.Max(minTerrainHeight, WaterHeight);
+
+                float normalizedHeight = Mathf.InverseLerp(minHeight, maxTerrainHeight, y);
 
 
                 Color baseColor = Colors.Evaluate(normalizedHeight);
@@ -281,15 +315,26 @@ public class TerrainGenerator : MonoBehaviour
 
 
 
-    float FBM(float x, float y, int Octaves, float Persistence, float Lacunarity)
+    float FBM(float x, float y, int Octaves, float Persistence, float Lacunarity, string NoiseType)
     {
         float FBMnoise = 0;
         float a = 1;
 
         for (int i = 0; i < Octaves; i++)
         {
-            FBMnoise += Mathf.PerlinNoise(x, y) * a;
-            a *= this.Persistence;
+            switch (NoiseType)
+            {
+                case "Perlin":
+                    FBMnoise += Mathf.PerlinNoise(x, y) * a;
+                    break;
+
+                case "Worley":
+                    FBMnoise += WorleyNoise(new Vector2(x,y)) * a;
+                    break;
+
+            }
+
+            a *= Persistence;
             x *= Lacunarity;
             y *= Lacunarity;
 
@@ -302,14 +347,15 @@ public class TerrainGenerator : MonoBehaviour
     float DomainWarp(float x, float y)
     {
 
+        /*
 
+                float fmb1 = FBM(x + 0, y + 0, PerlinOctaves, PerlinPersistence, .5f);
+                float fmb2 = FBM(x + 5.2f, y + 1.3f, 1, 1, .5f);
+                float fmb3 = FBM(x + 4 * fmb1 + 1.7f, y + 4 * fmb1 + 9.2f, 1, 1, .5f);
+                float fmb4 = FBM(x + 4 * fmb2 + 8.3f, y + 4 * fmb2 + 2.8f, 1, 1, .5f);
 
-        float fmb1 = FBM(x + 0, y + 0, Octaves, Persistence, .5f);
-        float fmb2 = FBM(x + 5.2f, y + 1.3f, 1, 1, .5f);
-        float fmb3 = FBM(x + 4 * fmb1 + 1.7f, y + 4 * fmb1 + 9.2f, 1, 1, .5f);
-        float fmb4 = FBM(x + 4 * fmb2 + 8.3f, y + 4 * fmb2 + 2.8f, 1, 1, .5f);
-
-        return FBM(fmb3, fmb4, 1, 1, .5f);
+                return FBM(fmb3, fmb4, 1, 1, .5f);*/
+        return 1;
     }
 
     void ColourTerrain()
@@ -366,12 +412,16 @@ public class TerrainGenerator : MonoBehaviour
 
         for (int a = 0; a < Artefacts.Count; a++)
         {
-            for (int i = 0; i < 3; i++)
+            if (ReachableNodes.Count > 0)
             {
-                int RandNodeIndex = UnityEngine.Random.Range(0, ReachableNodes.Count);
+                for (int i = 0; i < 3; i++)
+                {
+                    int RandNodeIndex = UnityEngine.Random.Range(0, ReachableNodes.Count);
 
-                GameObject newArtefact = GameObject.Instantiate(Artefacts[a], ReachableNodes[RandNodeIndex].worldPos, quaternion.identity);
-                ArtefactsInLevel.Add(newArtefact);
+                    GameObject newArtefact = GameObject.Instantiate(Artefacts[a], ReachableNodes[RandNodeIndex].worldPos, quaternion.identity);
+                    ArtefactsInLevel.Add(newArtefact);
+                    ReachableNodes.RemoveAt(RandNodeIndex);
+                }
             }
         }
 

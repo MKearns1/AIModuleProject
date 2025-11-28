@@ -16,7 +16,7 @@ public class Tiles : MonoBehaviour
 
     public TerrainTypes TerrainData;
 
-    public List<LayerMask> ProceduralTerrainInclusionLayers;
+    public LayerMask ProceduralTerrainInclusionLayers;
 
     float scentDecayRate = .05f;
     
@@ -52,6 +52,9 @@ public class Tiles : MonoBehaviour
         // Debug.Log(NodesGrid.GetLength(0).ToString() + " "+NodesGrid.GetLength(1).ToString());
 
         //transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, GameObject.Find("Player").transform.position);
+
+        if(NodesGrid == null)
+            return;
 
         foreach (var node in NodesGrid)
         {
@@ -138,34 +141,34 @@ public class Tiles : MonoBehaviour
         {
             for (int y = 0; y < GridSize; y++)
             {
-                Vector3 worldPos = BottomLeft +
-                    new Vector3(x * Scale, 100f, y * Scale);
+                Vector3 worldPos = BottomLeft + new Vector3(x * Scale, 100f, y * Scale);
 
                 NodeType type = NodeType.Default;
 
-                // Raycast DOWN to find terrain height
-                if (Physics.Raycast(worldPos, Vector3.down, out RaycastHit hit, 200f))
+                if (Physics.Raycast(worldPos, Vector3.down, out RaycastHit hit, 200f, ProceduralTerrainInclusionLayers))
                 {
-                    if (ProceduralTerrainInclusionLayers.Contains(hit.collider.gameObject.layer))
+                    float slopeDotProduct = Vector3.Dot(hit.normal, Vector3.up);
+
+
+
+                    if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Unwalkable") || slopeDotProduct < .5f)
                     {
-                        if (hit.collider.gameObject == GameObject.FindFirstObjectByType<TerrainGenerator>().WaterPlane)
+                        type = NodeType.Untraversable;
+                    }
+                    else
+                    {
+                        worldPos = hit.point;
+                        if ((worldPos.y < 7))
                         {
-                            type = NodeType.Untraversable;
+                            type = NodeType.Heavy;
                         }
                         else
                         {
-                            worldPos = hit.point;
-                            if ((worldPos.y < 7))
-                            {
-                                type = NodeType.Heavy;
-                            }
-                            else
-                            {
-                                type = NodeType.Default;
-                            }
-                            //type = DetectNodeType(worldPos);
+                            type = NodeType.Default;
                         }
+                        //type = DetectNodeType(worldPos);
                     }
+
                 }
                 else
                 {

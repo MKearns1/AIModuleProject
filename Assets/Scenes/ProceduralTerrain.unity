@@ -217,14 +217,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   xSize: 220
   zSize: 200
-  scale: 0.06
   heightMultiplier: 20
-  Octaves: 4
-  Persistence: 0.2
-  Lacunarity: 5
+  PerlinScale: 0.043
+  PerlinOctaves: 6
+  PerlinPersistence: 0.5
+  PerlinLacunarity: 2
+  PerlinInvert: 0
+  PerlinStrength: 1
   IslandFalloffStrength: 2
-  Water: 1
-  Water2: 0.5
+  WorleyScale: 0.01
+  WorleyOctaves: 4
+  WorleyPersistence: 0.25
+  WorleyLacunarity: 2
+  WorleyInvert: 1
+  Worleystrength: 1
+  PoolSharpness: 0
+  PoolDepthMultiplier: 0
+  PoolScale: 0
+  IslandFactor: 0.78
+  WaterHeight: 5
   Colors:
     serializedVersion: 2
     key0: {r: 0.8113208, g: 0.738238, b: 0.45770738, a: 1}
@@ -262,7 +273,25 @@ MonoBehaviour:
   - {fileID: 7630323569118860624, guid: eec8b2138aea2a046911024e96161b8f, type: 3}
   - {fileID: 7630323569118860624, guid: a7068b38a49c8184ebea81480bf224f7, type: 3}
   - {fileID: 7630323569118860624, guid: 09a4906960d687341aad8350549b94ea, type: 3}
-  ArtefactsInLevel: []
+  ArtefactsInLevel:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   Noises:
   - Persistence: 0
     Octaves: 0
@@ -373,10 +402,8 @@ MonoBehaviour:
   Scale: 1.5
   TerrainData: {fileID: 11400000, guid: d720b8cc748a6a548bf434aec95234dd, type: 2}
   ProceduralTerrainInclusionLayers:
-  - serializedVersion: 2
-    m_Bits: 256
-  - serializedVersion: 2
-    m_Bits: 2048
+    serializedVersion: 2
+    m_Bits: 2304
   DebugNodes: 0000000002000000
   ShowPlayerScent: 0
   ShowPlayerNode: 0

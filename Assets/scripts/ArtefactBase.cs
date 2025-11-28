@@ -11,6 +11,6 @@ public class ArtefactBase : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        transform.Rotate(0, Time.deltaTime * 90, 0);
     }
 }

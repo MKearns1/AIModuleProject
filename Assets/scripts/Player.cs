@@ -34,11 +34,14 @@ public class Player : MonoBehaviour
         TileMover = GetComponent<TileMovement>();
         capsuleCollider = GetComponent<CapsuleCollider>();
         CamOffset = Camera.main.transform.position - transform.position;
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (tilescript.NodesGrid == null) return;
+
         Vector3 CamPos = (transform.position / 1) + CamOffset;
         CamPos.y = Camera.main.transform.position.y;
         Camera.main.transform.position = CamPos;
