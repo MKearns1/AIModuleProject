@@ -51,7 +51,7 @@ public class Node
                 break;
 
             case NodeType.Heavy:
-                traversalPenalty = 100;
+                traversalPenalty = 200;
                 break;
 
         }

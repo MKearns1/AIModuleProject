@@ -7,6 +7,7 @@ public class EnemyBase : MonoBehaviour
     public float NextAttack;
     public int Health = 5;
     public int MaxHealth = 5;
+    public string ID;
     public GameObject BulletPrefab;
     public Transform BulletSpawnPos;
 
@@ -49,7 +50,7 @@ public class EnemyBase : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void Shoot(Vector3 Target)
+    public void Shoot(Vector3 Target, float DamageAmount)
     {
         GameObject newBullet = Instantiate(BulletPrefab, BulletSpawnPos.position, Quaternion.identity);
 
@@ -58,7 +59,7 @@ public class EnemyBase : MonoBehaviour
         Vector3 Dir = Target - BulletSpawnPos.position;
         Dir = Dir.normalized;
 
-        bullet.Initialize(Dir, this.gameObject);
+        bullet.Initialize(Dir, this.gameObject, DamageAmount);
         //bullet.Initialize(transform.forward);
         newBullet.transform.rotation = transform.rotation;
     }
@@ -98,6 +99,16 @@ public class EnemyBase : MonoBehaviour
 
         }
         return false;
+    }
+
+    public virtual float CalculateDamageAmount()
+    {
+        float DamageAmount = 1;
+
+
+
+
+        return DamageAmount;
     }
 }
 

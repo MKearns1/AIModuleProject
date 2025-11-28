@@ -4,6 +4,7 @@ public class EnemyBulletScript : MonoBehaviour
 {
     Rigidbody rb;
     float BulletSpeed = 20;
+    public float BulletDamage = 1;
     GameObject owner;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -18,10 +19,11 @@ public class EnemyBulletScript : MonoBehaviour
         
     }
 
-    public void Initialize(Vector3 Direction, GameObject owner)
+    public void Initialize(Vector3 Direction, GameObject owner, float DamageAmount)
     {
         rb = GetComponent<Rigidbody>();
         rb.linearVelocity = Direction*BulletSpeed;
+        BulletDamage = DamageAmount;
         this.owner = owner;
     }
 
@@ -31,7 +33,7 @@ public class EnemyBulletScript : MonoBehaviour
         if(other.gameObject.tag == "Player")
         {
             Player player = other.gameObject.GetComponent<Player>();
-            player.TakeDamage(1);
+            player.TakeDamage((int)BulletDamage);
 
         }
         Destroy(gameObject);

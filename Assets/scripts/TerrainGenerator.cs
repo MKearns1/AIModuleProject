@@ -2,6 +2,10 @@ using TreeEditor;
 using Unity.Mathematics;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.AI.Navigation;
+using System;
+using UnityEditor.Experimental.GraphView;
+using System.Data;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class TerrainGenerator : MonoBehaviour
@@ -12,45 +16,88 @@ public class TerrainGenerator : MonoBehaviour
     Vector3[] vertices;
     int[] triangles;
 
+    [Header("General Settings")]
     public int xSize = 26;
     public int zSize = 20;
-    public float scale = 0.3f;
-    public float scale2 = 0.3f;
-    public float f;
-    public float exponent = 1;
+    [Range(0.0f, 1)] public float scale = 0.3f;
     public float heightMultiplier = 2f;
-    public float Octaves;
-    public float Amplititude;
     Color[] colours;
+
+
+    [Header("Perlin Noise FBM")]
+    public int Octaves;
+    public float Persistence;
+    public float Lacunarity;
+    public float IslandFalloffStrength;
+
+
+    [Header("Inland Pools")]
+    public float Water;
+    public float Water2;
+
+    [ContextMenu("Rebuild Node Grid")]
+    void RebuildNodeGrid()
+    {
+        tiles.GenerateGridFromTerrain(null, transform);
+        
+    }
+
+    [ContextMenu("Regenerate Artefacts")]
+    void RegenerateArtefacts()
+    {
+        foreach(GameObject A in ArtefactsInLevel)
+        {
+            Destroy(A);
+        }
+        ArtefactsInLevel.Clear();
+
+        SpawnArtefacts();
+    }
     float minTerrainHeight = 0f;
     float maxTerrainHeight = 0f;
     public Gradient Colors;
     Tiles tiles;
+    NavMeshSurface navMeshSurface;
+    AStarPathfinding Pathfinding;
+    [NonSerialized]public GameObject WaterPlane;
+
+    public List<GameObject> Artefacts = new List<GameObject>();
+    public List<GameObject> ArtefactsInLevel = new List<GameObject>();
 
     public List<FBMNoise> Noises;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        
+        tiles = transform.GetComponent<Tiles>();
+        navMeshSurface = GetComponent<NavMeshSurface>();
+        Pathfinding = GetComponent<AStarPathfinding>();
+
         mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
         meshcollider = GetComponent<MeshCollider>();
-        tiles = transform.GetComponent<Tiles>();
 
-        remakeMesh(); UpdateMesh();
+        WaterPlane = GameObject.Find("Plane");
+
+        remakeMesh(); UpdateMesh(); tiles.GenerateGridFromTerrain(null,transform); SpawnArtefacts();
     }
 
     // Update is called once per frame
     void Update()
     {
-       // Debug.Log(tiles == null);
+        // Debug.Log(tiles == null);
 
-       remakeMesh();
+        // remakeMesh();
+        //navMeshSurface.BuildNavMesh();
+
+        //Debug.Log(Pathfinding == null);
+
     }
 
     void CreateShape()
     {
-        
+
         vertices = new Vector3[(xSize + 1) * (zSize + 1)];
 
         for (int i = 0, z = 0; z <= zSize; z++)
@@ -62,57 +109,78 @@ public class TerrainGenerator : MonoBehaviour
                 float ridge = 1f - Mathf.Abs(p);
                 ridge = ridge * ridge;
 
-                float Worley = WorleyNoise(new Vector2(x*scale, z*scale));
+                float Worley = WorleyNoise(new Vector2(x * scale, z * scale));
 
                 float combined = Mathf.Lerp(PerlinBase, ridge, ridge);
 
-
-                float PerlinAdd = Mathf.PerlinNoise(x * scale2, z * scale2) * f;
-                combined = (PerlinBase + PerlinAdd)/2;
-
-
-                combined = math.round(combined * exponent) / exponent;
-
-                combined = Mathf.Pow(combined, exponent);
-
-
                 float y = combined * heightMultiplier;
 
-             //   y = FBM(x*scale, z*scale, Octaves, Amplititude) * heightMultiplier;
-                y = DomainWarp(x*scale,z*scale) * heightMultiplier;
+                //y = DomainWarp(x*scale,z*scale) * heightMultiplier;
 
                 float WN = WorleyNoise(new Vector2(x * scale, z * scale));
-                y =  WN * heightMultiplier;
+                float pools = 1 - (Mathf.PerlinNoise(x * scale, z * scale));
+                pools = MathF.Pow(pools, Water);
 
+                float fbm = FBM(x * scale, z * scale, Octaves, Persistence, Lacunarity) * heightMultiplier;
+                y = (1 - pools * Water2) * fbm;
+
+
+                /*                // ---------------------------
+                                // 2. Island Falloff Mask
+                                // ---------------------------
+                                float centerX = xSize / 2f;
+                                float centerZ = zSize / 2f;
+
+                                float dx = x - centerX;
+                                float dz = z - centerZ;
+
+                                float distance = Mathf.Sqrt(dx * dx + dz * dz);
+                                float maxDist = Mathf.Sqrt(centerX * centerX + centerZ * centerZ);
+
+                                float mask = distance / maxDist;       // 0 center, 1 edge
+                                float falloff = Mathf.Pow(mask, .25f);   // tweak exponent
+
+                                // ---------------------------
+                                // 3. Apply falloff
+                                // ---------------------------
+                                float coastNoise = Mathf.PerlinNoise(x * 0.15f, z * 0.15f);
+                                y *= Mathf.Lerp(1f - falloff, 1f, coastNoise * 0.2f);
+                                // Optional sea floor clamp
+                                if (y < 0) y = 0;*/
+
+                // ----- ISLAND FALLOFF -----
+
+                float cx = xSize * 0.5f;
+                float cz = zSize * 0.5f;
+
+                float nx = (x - cx) / cx;
+                float nz = (z - cz) / cz;
+                float dist = Mathf.Sqrt(nx * nx + nz * nz);
+
+                float falloff = Mathf.Clamp01(Mathf.Pow(dist, IslandFalloffStrength));
+
+                y = Mathf.Lerp(y, 0f, falloff);
+
+                /*                if (y < minTerrainHeight)
+                                {
+                                    minTerrainHeight = y;
+                                }
+                                else if (y > maxTerrainHeight)
+                                {
+                                    maxTerrainHeight = y;
+                                }*/
                 vertices[i] = new Vector3(x, y, z);
 
                 float normalizedHeight = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, y);
-                
-                Color color = Color.blue;
-                Color colorb = Color.red;
 
-                //if(normalizedHeight < .25)
-                //{
-                //    color = Color.yellow;
-                //    colorb = Color.green;
-                //}
-                //else if (normalizedHeight < .5)
-                //    {
-                //        color = Color.green;
-                //        colorb = Color.grey;
-                //    }
-                //else if(normalizedHeight <= 1)
-                //{
-                //    color = Color.grey;
-                //    colorb = Color.white;
-                //}
 
-                Color HeightColor = Colors.Evaluate(normalizedHeight);
-                    colours[i] = Color.Lerp(color, colorb, normalizedHeight);
-                colours[i] = HeightColor;
+                Color baseColor = Colors.Evaluate(normalizedHeight);
+                colours[i] = baseColor;
+
+
                 i++;
             }
-           
+
         }
         triangles = new int[xSize * zSize * 6];
         int vert = 0;
@@ -135,7 +203,7 @@ public class TerrainGenerator : MonoBehaviour
             }
             vert++;
         }
-        
+
     }
 
     void UpdateMesh()
@@ -144,12 +212,19 @@ public class TerrainGenerator : MonoBehaviour
 
         mesh.vertices = vertices;
         mesh.triangles = triangles;
-        mesh.colors = colours;
         mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        mesh.RecalculateTangents();
+        // ColourTerrain();
+        mesh.colors = colours;
 
-        meshcollider.sharedMesh = null;
-        meshcollider.sharedMesh = mesh;
-       // tiles.GenerateGridFromTerrain(mesh, transform);
+        //if (meshcollider != null)
+        {
+            meshcollider.sharedMesh = null;
+
+            meshcollider.sharedMesh = mesh;
+        }
+        // tiles.GenerateGridFromTerrain(mesh, transform);
     }
 
     void remakeMesh()
@@ -163,6 +238,7 @@ public class TerrainGenerator : MonoBehaviour
 
         CreateShape();
         UpdateMesh();
+       // navMeshSurface.BuildNavMesh();
     }
 
 
@@ -184,8 +260,8 @@ public class TerrainGenerator : MonoBehaviour
                 //float rx = UnityEngine.Random.Range(0f, 1f);
                 //float rx = Mathf.PerlinNoise(pos.x,pos.y) + math.sin(Time.time * Mathf.PerlinNoise(pos.x, pos.y));
                 //float rx = Mathf.PerlinNoise(pos.x,pos.y);
-                float rx = Mathf.PerlinNoise(thisCell.x,thisCell.y);
-                float ry = Mathf.PerlinNoise(thisCell.x, thisCell.y);
+                float rx = Mathf.PerlinNoise(pos.x, pos.y);
+                float ry = Mathf.PerlinNoise(pos.x, pos.y);
 
                 // Random feature point inside cell
                 Vector2 featurePoint = thisCell + new Vector2(
@@ -205,17 +281,17 @@ public class TerrainGenerator : MonoBehaviour
 
 
 
-    float FBM(float x, float y, float Octaves, float Amplititude)
+    float FBM(float x, float y, int Octaves, float Persistence, float Lacunarity)
     {
         float FBMnoise = 0;
-        float amp = Amplititude;
+        float a = 1;
 
         for (int i = 0; i < Octaves; i++)
         {
-            FBMnoise += Mathf.PerlinNoise(x, y) * amp;
-            amp *= .5f;
-            x *= 2;
-            y *= 2;
+            FBMnoise += Mathf.PerlinNoise(x, y) * a;
+            a *= this.Persistence;
+            x *= Lacunarity;
+            y *= Lacunarity;
 
         }
 
@@ -226,20 +302,105 @@ public class TerrainGenerator : MonoBehaviour
     float DomainWarp(float x, float y)
     {
 
-        
 
-        float fmb1 = FBM(x + 0,y+  0, Octaves, Amplititude);
-        float fmb2 = FBM(x+ 5.2f,y+ 1.3f, 1, 1);
-        float fmb3 = FBM(x+ 4*fmb1+1.7f,y+ 4 *fmb1 + 9.2f, 1, 1);
-        float fmb4 = FBM(x + 4 * fmb2 + 8.3f, y + 4 * fmb2 + 2.8f, 1, 1);
 
-        return FBM(fmb3, fmb4, 1, 1);
+        float fmb1 = FBM(x + 0, y + 0, Octaves, Persistence, .5f);
+        float fmb2 = FBM(x + 5.2f, y + 1.3f, 1, 1, .5f);
+        float fmb3 = FBM(x + 4 * fmb1 + 1.7f, y + 4 * fmb1 + 9.2f, 1, 1, .5f);
+        float fmb4 = FBM(x + 4 * fmb2 + 8.3f, y + 4 * fmb2 + 2.8f, 1, 1, .5f);
+
+        return FBM(fmb3, fmb4, 1, 1, .5f);
     }
+
+    void ColourTerrain()
+    {
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            float y = vertices[i].y;
+
+            float normalizedHeight = Mathf.InverseLerp(minTerrainHeight, maxTerrainHeight, y);
+
+            Vector3 normal = mesh.normals[i];
+            float slope = 1f - normal.y; // 0 flat, 1 steep
+
+            // Height-based color
+            Color baseColor = Colors.Evaluate(normalizedHeight);
+
+            // Add slope-based rock
+            //Color rock = new Color(0.5f, 0.5f, 0.5f);
+            Color rock = Color.black;
+            Color slopeColor = Color.Lerp(baseColor, rock, slope * slope);
+
+            // Add perlin patch variation
+            float patch = Mathf.PerlinNoise(vertices[i].x * 0.2f, vertices[i].z * 0.2f);
+            Color finalColor = Color.Lerp(slopeColor, baseColor * 0.8f, patch * 0.1f);
+
+            colours[i] = finalColor;
+        }
+    }
+
+    public void SpawnArtefacts()
+    {
+        List<Node> ReachableNodes = new List<Node>();
+
+        foreach (Node node in tiles.NodesGrid)
+        {
+            float rand = UnityEngine.Random.Range(0f, 1f);
+            int randArt = UnityEngine.Random.Range(0, Artefacts.Count);
+            if(node.nodeTyoe == NodeType.Untraversable) continue;
+            if(node.nodeTyoe == NodeType.Heavy) continue;
+
+            List<Node> path = Pathfinding.GetPath(GameObject.Find("Player").transform.position, node.worldPos);
+
+            if (path.Count > 1)
+            {
+                //GameObject newArtefact = GameObject.Instantiate(Artefacts[randArt], node.worldPos, quaternion.identity);
+                ReachableNodes.Add(node);
+
+            }
+
+            if (rand < .02f)
+            {
+            }
+        }
+
+        for (int a = 0; a < Artefacts.Count; a++)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                int RandNodeIndex = UnityEngine.Random.Range(0, ReachableNodes.Count);
+
+                GameObject newArtefact = GameObject.Instantiate(Artefacts[a], ReachableNodes[RandNodeIndex].worldPos, quaternion.identity);
+                ArtefactsInLevel.Add(newArtefact);
+            }
+        }
+
+    }
+    private void OnValidate()
+    {
+        if (Application.isPlaying)
+        {
+            remakeMesh();
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (vertices == null || mesh == null) return;
+        var norms = mesh.normals;
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(vertices[i], vertices[i] + norms[i]);
+        }
+    }
+
 }
 
 [System.Serializable]
 public class FBMNoise
 {
-    public float Amplititude;
-    public float Octaves;
+    public float Persistence;
+    public int Octaves;
+    public float Lacunarity;
 }

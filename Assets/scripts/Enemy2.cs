@@ -201,6 +201,7 @@ public class Enemy2 : EnemyBase
         AgentInfo.transform.rotation = Camera.main.transform.rotation;
         AgentInfo.transform.Find("StateText").transform.GetComponent<TextMeshPro>().text = "State: " + CurrentState.ToString();
         AgentInfo.transform.Find("HealthText").transform.GetComponent<TextMeshPro>().text = "Health: " + Health.ToString();
+        AgentInfo.transform.Find("BotID").transform.GetComponent<TextMeshPro>().text = "ID: " + ID;
 
      //   Debug.Log("tIMESINCESEENPLAYER: "+ TimeSinceSeenPlayer);
 
@@ -674,7 +675,7 @@ public class Enemy2 : EnemyBase
             if (Time.time > NextAttack)
             {
                 NextAttack = Time.time + AttackRate;
-                Shoot(player.transform.position);
+                Shoot(player.transform.position, CalculateDamageAmount());
                 Debug.Log("SHOOT");
 
             }
@@ -851,6 +852,29 @@ public class Enemy2 : EnemyBase
         }
     }
 
+    public override float CalculateDamageAmount()
+    {
+        float BaseDamage = 1;
+
+        float healthpercent = (float)Health / (float)MaxHealth;
+        float LowHealthBonusChance = 1 - healthpercent;
+
+        int EnemiesRemaining = GameObject.FindObjectsByType<EnemyBase>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
+        int MaxEnemies = 15;
+        EnemiesRemaining = Mathf.Clamp(EnemiesRemaining, 1, MaxEnemies);
+
+        float LowEnemyBonusChance = 1 - ((float)EnemiesRemaining / (float)MaxEnemies);
+
+        float LowHealthBonus = 0;
+        float LowEnemyBonus = 0;
+
+        if (Random.Range(0f, 1f) < LowHealthBonusChance) LowHealthBonus = 1f;
+        if (Random.Range(0f, 1f) < LowEnemyBonusChance) LowEnemyBonus = 1f;
+
+        float FinalDamage = BaseDamage + LowHealthBonus + LowEnemyBonus;
+
+        return FinalDamage;
+    }
     private void OnDrawGizmos()
     {
         if (CurrentPath.Count > 0)

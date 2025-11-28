@@ -375,11 +375,14 @@ MonoBehaviour:
   AttackRate: 1
   NextAttack: 0
   Health: 5
+  MaxHealth: 5
+  ID: 
   BulletPrefab: {fileID: 5129902741809793479, guid: bc3e4a31374ab0c44b7991767f0a9b39, type: 3}
   BulletSpawnPos: {fileID: 8901828794391091856}
+  PlayerLastSeenPrefab: {fileID: 8027265933734710449, guid: b7caf0d5087afef45baede7472b1b5ec, type: 3}
   CurrentSuperState: 0
   CurrentState: 0
-  PlayerLastSeenPrefab: {fileID: 8027265933734710449, guid: b7caf0d5087afef45baede7472b1b5ec, type: 3}
+  CurrentDog: {fileID: 0}
 --- !u!114 &2777446508711726253
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -404,7 +407,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25e0e90a92e103f4586db33a6aef05f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  viewDistance: 20
+  viewDistance: 2.3
   viewAngle: 120
   obstacleMask:
     serializedVersion: 2
@@ -1365,6 +1368,10 @@ PrefabInstance:
     - target: {fileID: 4238765277387658437, guid: 22c3bee3b09054d41bee21af837dc1b7, type: 3}
       propertyPath: m_Name
       value: HealthText
+      objectReference: {fileID: 0}
+    - target: {fileID: 4454332642860672745, guid: 22c3bee3b09054d41bee21af837dc1b7, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7686106882418835498, guid: 22c3bee3b09054d41bee21af837dc1b7, type: 3}
       propertyPath: m_SizeDelta.x

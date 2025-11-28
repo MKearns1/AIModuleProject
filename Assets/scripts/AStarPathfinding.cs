@@ -9,14 +9,22 @@ public class AStarPathfinding : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        TilesScript= GameObject.Find("Tiles").GetComponent<Tiles>();
-       // TilesScript= GameObject.Find("Terrain").GetComponent<Tiles>();
+        if (TilesScript == null)
+        {
+            TilesScript = GameObject.FindFirstObjectByType<Tiles>();
+        }
+        // TilesScript= GameObject.Find("Terrain").GetComponent<Tiles>();
+    }
+    private void Awake()
+    {
+        TilesScript = GetComponent<Tiles>();
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        //Debug.Log(TilesScript == null);
     }
 
     public List<Node> GetNodeNeighbours(Node node)
@@ -89,6 +97,12 @@ public class AStarPathfinding : MonoBehaviour
 
     public List<Node> GetPath(Vector3 StartPosition, Vector3 EndPosition)
     {
+        foreach (Node n in TilesScript.NodesGrid)
+        {
+            n.gCost = int.MaxValue;
+            n.hCost = 0;
+        }
+
         List<Node> path = new List<Node>();
         Dictionary<Node, Node> ThisNodesParent = new Dictionary<Node, Node>();
 
@@ -128,26 +142,27 @@ public class AStarPathfinding : MonoBehaviour
             {
 
                 bool shouldSkip = CurrentNodeNeighbour.nodeTyoe == NodeType.Untraversable || ExploredNodes.Contains(CurrentNodeNeighbour);
-                bool occupied = true;
+/*                bool occupied = true;
+                if(CurrentNodeNeighbour.Occupier == gameObject || CurrentNodeNeighbour.occupied == false) { occupied = false; }*/
 
-                if(CurrentNodeNeighbour.Occupier == gameObject || CurrentNodeNeighbour.occupied == false) { occupied = false; }
+                bool occupied = CurrentNodeNeighbour.occupied && CurrentNodeNeighbour.Occupier != this.gameObject;
 
+/*
+                if (CurrentNodeNeighbour.occupied)
+                {
+                    if (CurrentNodeNeighbour != TilesScript.GetNodeFromWorldPosition(transform.position))
+                    {
+                        occupied = false;
+                    }
 
-                //if (CurrentNodeNeighbour.occupied)
-                //{
-                //    if (CurrentNodeNeighbour != TilesScript.GetNodeFromWorldPosition(transform.position))
-                //    {
-                //        occupied = false;
-                //    }
-
-                //}
-                //else
-                //{
-                //    occupied = false ;
-                //}
+                }
+                else
+                {
+                    occupied = false;
+                }*/
                 bool isGoal = EndNode == CurrentNodeNeighbour;
 
-                if (!isGoal && shouldSkip && !occupied)
+                if (!isGoal && (shouldSkip || occupied))
                 {
                     continue;
                 }

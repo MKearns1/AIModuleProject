@@ -16,7 +16,16 @@ public class Tiles : MonoBehaviour
 
     public TerrainTypes TerrainData;
 
+    public List<LayerMask> ProceduralTerrainInclusionLayers;
+
     float scentDecayRate = .05f;
+    
+    [Header("Debug Settings")]
+
+    public List<NodeType> DebugNodes = new List<NodeType>();
+
+    public bool ShowPlayerScent;
+    public bool ShowPlayerNode;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -34,7 +43,7 @@ public class Tiles : MonoBehaviour
     }
     private void Awake()
     {
-       GenerateGrid();
+       //GenerateGrid();
 
     }
     // Update is called once per frame
@@ -137,17 +146,26 @@ public class Tiles : MonoBehaviour
                 // Raycast DOWN to find terrain height
                 if (Physics.Raycast(worldPos, Vector3.down, out RaycastHit hit, 200f))
                 {
-                    worldPos = hit.point;
-                    if ((worldPos.y < 7))
+                    if (ProceduralTerrainInclusionLayers.Contains(hit.collider.gameObject.layer))
                     {
-                        type = NodeType.Heavy;
+                        if (hit.collider.gameObject == GameObject.FindFirstObjectByType<TerrainGenerator>().WaterPlane)
+                        {
+                            type = NodeType.Untraversable;
+                        }
+                        else
+                        {
+                            worldPos = hit.point;
+                            if ((worldPos.y < 7))
+                            {
+                                type = NodeType.Heavy;
+                            }
+                            else
+                            {
+                                type = NodeType.Default;
+                            }
+                            //type = DetectNodeType(worldPos);
+                        }
                     }
-                    else
-                    {
-                        type = NodeType.Default;
-                    }
-                    //type = DetectNodeType(worldPos);
-
                 }
                 else
                 {
@@ -217,7 +235,7 @@ public class Tiles : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (false) { 
+        if (true) { 
         Gizmos.DrawCube(transform.position - (Vector3.right * GridSize * Scale / 2) - (Vector3.forward * GridSize * Scale / 2),Vector3.one);
 
             if (NodesGrid != null)
@@ -228,6 +246,10 @@ public class Tiles : MonoBehaviour
                 {
                     for (int j = 0; j < NodesGrid.GetLength(1); j++)
                     {
+                        NodeType nodeType = NodesGrid[i,j].nodeTyoe;
+
+
+                        if(!DebugNodes.Contains(nodeType)) { continue; }
 
                         Vector3 pos = NodesGrid[i, j].worldPos;
                         //pos.z = pos.y;
@@ -235,12 +257,15 @@ public class Tiles : MonoBehaviour
                         Vector3 scale = Vector3.one * Scale;
                         Gizmos.color = Color.white;
 
-                        if (NodesGrid[i, j] == playersNode)
+                        if (NodesGrid[i, j] == playersNode && ShowPlayerNode)
                         {
                             Gizmos.color = Color.red;
                         }
 
-                        switch (NodesGrid[i,j].nodeTyoe)
+                        if (DebugNodes.Contains(NodeType.Default))
+
+
+                        switch (nodeType)
                         {
                             case NodeType.Untraversable:
                                 Gizmos.color = Color.black; break;
@@ -257,7 +282,7 @@ public class Tiles : MonoBehaviour
                         //    Gizmos.color = Color.black;
                         //}
 
-                        if (NodesGrid[i,j].PlayerScentStrength > 0)
+                        if (NodesGrid[i,j].PlayerScentStrength > 0 && ShowPlayerScent)
                         {
                             Color color = Color.white;
                             color *= Color.magenta * NodesGrid[i,j].PlayerScentStrength;
@@ -266,7 +291,7 @@ public class Tiles : MonoBehaviour
 
                         }
 
-                        //Gizmos.DrawCube(pos, scale * .7f);
+                        Gizmos.DrawCube(pos, scale * .7f);
                     }
                 }
 
