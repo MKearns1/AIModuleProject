@@ -51,7 +51,7 @@ public class TerrainGenerator : MonoBehaviour
     [ContextMenu("Rebuild Node Grid")]
     void RebuildNodeGrid()
     {
-        tiles.GenerateGridFromTerrain(null, transform);
+        tiles.GenerateGridFromTerrain(this);
         
     }
 
@@ -131,7 +131,7 @@ public class TerrainGenerator : MonoBehaviour
                
 
                 float Perlinfbm = FBM(x * PerlinScale, z * PerlinScale, PerlinOctaves, PerlinPersistence, PerlinLacunarity, "Perlin");
-                Perlinfbm = Mathf.Clamp(Perlinfbm, 0f, 1);
+                Perlinfbm = Mathf.Clamp(Perlinfbm, 0f, 9999);
                 if (PerlinInvert) Perlinfbm = 1 - Perlinfbm;
                 Perlinfbm = Mathf.Lerp(1, Perlinfbm, PerlinStrength);
 
@@ -389,12 +389,20 @@ public class TerrainGenerator : MonoBehaviour
     {
         List<Node> ReachableNodes = new List<Node>();
 
-        foreach (Node node in tiles.NodesGrid)
+        Node startNode = tiles.GetNodeFromWorldPosition(GameObject.Find("Player").transform.position);
+
+        ReachableNodes = Pathfinding.GetReachableNodesFromPosition(startNode);
+
+
+
+/*        foreach (Node node in tiles.NodesGrid)
         {
             float rand = UnityEngine.Random.Range(0f, 1f);
             int randArt = UnityEngine.Random.Range(0, Artefacts.Count);
             if(node.nodeTyoe == NodeType.Untraversable) continue;
             if(node.nodeTyoe == NodeType.Heavy) continue;
+
+            if(UnreachableNodes.Contains(node)) continue;
 
             List<Node> path = Pathfinding.GetPath(GameObject.Find("Player").transform.position, node.worldPos);
 
@@ -404,11 +412,27 @@ public class TerrainGenerator : MonoBehaviour
                 ReachableNodes.Add(node);
 
             }
+            else
+            {
+                UnreachableNodes.Add(node);
+            }
+
+            foreach (Node unreachableNode in UnreachableNodes)
+            {
+                List<Node> unreachNodeNeighbours = Pathfinding.GetNodeNeighbours(unreachableNode);
+                foreach(Node neighbour in unreachNodeNeighbours)
+                {
+                    if (visitedNode[neighbour])continue;
+                    if (neighbour.nodeTyoe == NodeType.Untraversable) continue;
+                    visitedNode.Add(neighbour, true);
+
+                }
+            }
 
             if (rand < .02f)
             {
             }
-        }
+        }*/
 
         for (int a = 0; a < Artefacts.Count; a++)
         {
@@ -424,6 +448,11 @@ public class TerrainGenerator : MonoBehaviour
                 }
             }
         }
+
+    }
+
+    public void SpawnTrees()
+    {
 
     }
     private void OnValidate()

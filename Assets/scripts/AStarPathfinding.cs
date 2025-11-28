@@ -9,11 +9,13 @@ public class AStarPathfinding : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        if (TilesScript == null)
+        while (TilesScript == null)
         {
             TilesScript = GameObject.FindFirstObjectByType<Tiles>();
         }
         // TilesScript= GameObject.Find("Terrain").GetComponent<Tiles>();
+        Debug.Log(TilesScript == null);
+
     }
     private void Awake()
     {
@@ -208,5 +210,35 @@ public class AStarPathfinding : MonoBehaviour
         path.Reverse();
         return path;
 
+    }
+
+    public List<Node> GetReachableNodesFromPosition(Node StartNode)
+    {
+        List<Node> Reachable = new List<Node>();
+        
+        List<Node> Queue = new List<Node>();
+        HashSet<Node> visited = new HashSet<Node>();
+
+        Queue.Add(StartNode);
+        visited.Add(StartNode);
+
+        while (Queue.Count > 0)
+        {
+            Node current = Queue[0];
+            Queue.RemoveAt(0);
+
+            Reachable.Add(current);
+
+            foreach (Node neighbour in GetNodeNeighbours(current))
+            {
+                if(visited.Contains(neighbour))continue;
+                if(neighbour.nodeTyoe == NodeType.Untraversable)continue;
+
+                visited.Add(neighbour);
+                Queue.Add(neighbour);
+            }
+        }
+
+        return Reachable;
     }
 }

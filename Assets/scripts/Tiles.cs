@@ -131,11 +131,15 @@ public class Tiles : MonoBehaviour
         }
     }
 
-    public void GenerateGridFromTerrain(Mesh terrainMesh, Transform terrainTransform)
+    public void GenerateGridFromTerrain(TerrainGenerator terrainGen)
     {
+        BottomLeft = terrainGen.transform.position;
+        float numNodes = terrainGen.xSize / Scale;
+
+        GridSize = Mathf.FloorToInt(numNodes);
+
         NodesGrid = new Node[GridSize, GridSize];
 
-        BottomLeft = terrainTransform.position;
 
         for (int x = 0; x < GridSize; x++)
         {

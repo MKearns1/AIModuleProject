@@ -63,10 +63,11 @@ public class Enemy2 : EnemyBase
         TileMover = GetComponent<TileMovement>();
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
         capsuleCollider = GetComponent<CapsuleCollider>();
-        tiles = GameObject.Find("Tiles").GetComponent<Tiles>();
+        tiles = GameObject.FindFirstObjectByType<Tiles>();
         //tiles = GameObject.Find("Terrain").GetComponent<Tiles>();
         vision = GetComponent<Vision>();
         AgentInfo = transform.Find("AgentInfo").gameObject;
+
 
         tiles.GetNodeFromWorldPosition(transform.position).SetOccupied(true, gameObject);
 
@@ -77,6 +78,8 @@ public class Enemy2 : EnemyBase
     // Update is called once per frame
     void Update()
     {
+        if (tiles.NodesGrid == null) return;
+
         if (Input.GetKeyDown(KeyCode.F))
         {
             StartChase();
@@ -209,6 +212,7 @@ public class Enemy2 : EnemyBase
 
     public void FollowPath()
     {
+        if(tiles.NodesGrid == null)return;
         CurrentNode = tiles.GetNodeFromWorldPosition(transform.position);
 
         if (CurrentPath.Count == 0 || Waiting)
@@ -390,11 +394,27 @@ public class Enemy2 : EnemyBase
     void StartPatrol()
     {
 
-        Transform PatrolPoints = GameObject.Find("PatrolPoints").transform;
+        GameObject PatrolPoints = GameObject.Find("PatrolPoints");
+
+        if (PatrolPoints == null)
+        {
+            if (GameObject.Find("AutoPatrolPoint" + ID) != null) Destroy(GameObject.Find("AutoPatrolPoint" + ID));
+            List<Node> ReachableNodes = Pathfinder.GetReachableNodesFromPosition(tiles.GetNodeFromWorldPosition(transform.position));
+            int randomPoint = Random.Range(0, ReachableNodes.Count);
+
+            GameObject patrolpoint = new GameObject();
+            patrolpoint.transform.position = ReachableNodes[randomPoint].worldPos;
+            patrolpoint.name = "AutoPatrolPoint"+ID;
+            CurrentPath = Pathfinder.GetPath(transform.position, patrolpoint.transform.position);
+
+            StartPos = transform.position;
+            CurrentPatrolPoint = patrolpoint.transform;
+            return;
+        }
 
         List<Transform> Point = new List<Transform>();
 
-        foreach (Transform t in PatrolPoints)
+        foreach (Transform t in PatrolPoints.transform)
         {
             if (t.gameObject.activeInHierarchy)
             {
@@ -426,6 +446,7 @@ public class Enemy2 : EnemyBase
 
         if (Vector3.Distance(transform.position, CurrentPatrolPoint.position) < 0.5f)
         {
+            if(CurrentPatrolPoint.name == "AutoPatrolPoint"+ID) Destroy(CurrentPatrolPoint.gameObject);
             StartPatrol();
         }
 
@@ -898,7 +919,7 @@ public class Enemy2 : EnemyBase
         }
         else
         {
-            if (player != null)
+            if (player != null && tiles.NodesGrid != null)
             {
                 List<Node> path = Pathfinder.GetPath(transform.position, GameObject.FindWithTag("Player").transform.position);
                 Color pathColor = Color.green;

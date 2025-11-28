@@ -137,6 +137,7 @@ public class Player : MonoBehaviour
         if (NextX < 0 || NextY < 0 || NextX >= tilescript.GridSize || NextY >= tilescript.GridSize)
             return;
 
+
         NextNode = tilescript.NodesGrid[NextX, NextY];
 
         if (NextNode.nodeTyoe == NodeType.Untraversable || NextNode.occupied)
