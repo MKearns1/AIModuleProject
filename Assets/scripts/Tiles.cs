@@ -5,6 +5,7 @@ using static UnityEditor.PlayerSettings;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using static TreeEditor.TreeEditorHelper;
+using UnityEngine.SceneManagement;
 
 public class Tiles : MonoBehaviour
 {
@@ -43,7 +44,10 @@ public class Tiles : MonoBehaviour
     }
     private void Awake()
     {
-       //GenerateGrid();
+        if(SceneManager.GetActiveScene().name == "AIPlayground")
+        {
+            GenerateGrid();
+        }
 
     }
     // Update is called once per frame
@@ -133,6 +137,8 @@ public class Tiles : MonoBehaviour
 
     public void GenerateGridFromTerrain(TerrainGenerator terrainGen)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
         BottomLeft = terrainGen.transform.position;
         float numNodes = terrainGen.xSize / Scale;
 
@@ -153,8 +159,6 @@ public class Tiles : MonoBehaviour
                 {
                     float slopeDotProduct = Vector3.Dot(hit.normal, Vector3.up);
 
-
-
                     if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Unwalkable") || slopeDotProduct < .5f)
                     {
                         type = NodeType.Untraversable;
@@ -162,7 +166,14 @@ public class Tiles : MonoBehaviour
                     else
                     {
                         worldPos = hit.point;
-                        if ((worldPos.y < 7))
+
+                        float normalizedHeight = Mathf.InverseLerp(terrainGen.minHeight, terrainGen.maxTerrainHeight, worldPos.y);
+
+                        if ((normalizedHeight < .1))
+                        {
+                            type = NodeType.Light;
+                        }
+                        else if(normalizedHeight > .8f || slopeDotProduct < .7f)
                         {
                             type = NodeType.Heavy;
                         }
@@ -170,7 +181,6 @@ public class Tiles : MonoBehaviour
                         {
                             type = NodeType.Default;
                         }
-                        //type = DetectNodeType(worldPos);
                     }
 
                 }
@@ -184,6 +194,9 @@ public class Tiles : MonoBehaviour
                 NodesGrid[x, y] = new Node(new Vector2Int(x, y), worldPos, type);
             }
         }
+
+        sw.Stop();
+        Debug.Log("Node Placement time: " + sw.ElapsedMilliseconds);
     }
 
 
@@ -254,23 +267,27 @@ public class Tiles : MonoBehaviour
                     for (int j = 0; j < NodesGrid.GetLength(1); j++)
                     {
                         NodeType nodeType = NodesGrid[i,j].nodeTyoe;
-
-
-                        if(!DebugNodes.Contains(nodeType)) { continue; }
-
                         Vector3 pos = NodesGrid[i, j].worldPos;
-                        //pos.z = pos.y;
-
                         Vector3 scale = Vector3.one * Scale;
-                        Gizmos.color = Color.white;
 
+                        if (NodesGrid[i, j].PlayerScentStrength > 0 && ShowPlayerScent)
+                        {
+                            Color color = Color.white;
+                            color *= Color.magenta * NodesGrid[i, j].PlayerScentStrength;
+
+                            Gizmos.color = color; Gizmos.DrawCube(pos, scale * .8f);
+                            continue;
+                        }
                         if (NodesGrid[i, j] == playersNode && ShowPlayerNode)
                         {
                             Gizmos.color = Color.red;
                         }
 
-                        if (DebugNodes.Contains(NodeType.Default))
+                        if (!DebugNodes.Contains(nodeType)) { continue; }
 
+                        //pos.z = pos.y;
+
+                        Gizmos.color = Color.white;
 
                         switch (nodeType)
                         {
@@ -278,9 +295,13 @@ public class Tiles : MonoBehaviour
                                 Gizmos.color = Color.black; break;
                             case NodeType.Heavy:
                                 Gizmos.color = Color.red; break;
+                            case NodeType.Light:
+                                Gizmos.color = Color.yellow; break;
+                            case NodeType.Default:
+                                Gizmos.color = Color.white; break;
                         }
 
-                        if(NodesGrid[i, j].occupied)
+                        if (NodesGrid[i, j].occupied)
                         {
                             Gizmos.color = Color.yellow;
                         }
@@ -289,15 +310,7 @@ public class Tiles : MonoBehaviour
                         //    Gizmos.color = Color.black;
                         //}
 
-                        if (NodesGrid[i,j].PlayerScentStrength > 0 && ShowPlayerScent)
-                        {
-                            Color color = Color.white;
-                            color *= Color.magenta * NodesGrid[i,j].PlayerScentStrength;
-
-                            Gizmos.color = color; Gizmos.DrawCube(pos, scale * .7f);
-
-                        }
-
+                        
                         Gizmos.DrawCube(pos, scale * .7f);
                     }
                 }

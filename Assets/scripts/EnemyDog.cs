@@ -27,7 +27,7 @@ public class EnemyDog : EnemyBase
     {
         agent = GetComponent<NavMeshAgent>();
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
-        HealthText = transform.Find("HealthText").GetComponent<TextMeshPro>();
+       // HealthText = transform.Find("HealthText").GetComponent<TextMeshPro>();
         TileScript = GameObject.FindFirstObjectByType<Tiles>();
         AgentInfo = transform.Find("AgentInfo").gameObject;
         vision = GetComponent<Vision>();
@@ -39,6 +39,8 @@ public class EnemyDog : EnemyBase
             CurrentOwner = newowner;
             CurrentOwner.CurrentDog = this;
         }
+
+        Debug.Log(TileScript == null);
 
         ChangeState(DogEnemyStates.FollowOwner, DogSuperStates.Passive);
     }
@@ -387,7 +389,7 @@ public class EnemyDog : EnemyBase
                 Gizmos.color = Color.cyan;
 
                 if(n.PlayerScentStrength > 0) { Gizmos.color = Color.blue; }
-                Gizmos.DrawCube(n.worldPos, Vector3.one);
+                Gizmos.DrawCube(n.worldPos, Vector3.one * .6f);
             }
         }
     }

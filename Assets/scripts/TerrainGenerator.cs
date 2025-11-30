@@ -6,6 +6,7 @@ using Unity.AI.Navigation;
 using System;
 using UnityEditor.Experimental.GraphView;
 using System.Data;
+using Unity.VisualScripting;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class TerrainGenerator : MonoBehaviour
@@ -48,6 +49,12 @@ public class TerrainGenerator : MonoBehaviour
     [Range(0.0f, 1f)] public float IslandShape;
     public float WaterHeight;
 
+    [Header("Artefact Settings")]
+    public int DesiredNumOfArtefacts;
+    public int DesiredNumOfEachArtefact;
+    public List<GameObject> Artefacts = new List<GameObject>();
+    public List<GameObject> ArtefactsInLevel = new List<GameObject>();
+
     [ContextMenu("Rebuild Node Grid")]
     void RebuildNodeGrid()
     {
@@ -60,22 +67,29 @@ public class TerrainGenerator : MonoBehaviour
     {
         foreach(GameObject A in ArtefactsInLevel)
         {
+            if(A == null) continue;
+            tiles.GetNodeFromWorldPosition(A.transform.position).occupied = false;
             Destroy(A);
         }
         ArtefactsInLevel.Clear();
 
+        List<Node> reachable = Pathfinding.GetReachableNodesFromPosition(tiles.GetNodeFromWorldPosition(transform.position), false);
+
+        foreach(Node A in reachable)
+        {
+            A.occupied = false;
+        }
+
         SpawnArtefacts();
     }
-    float minTerrainHeight = 0f;
-    float maxTerrainHeight = 0f;
+    [NonSerialized]public float minTerrainHeight = 0f;
+    [NonSerialized] public float maxTerrainHeight = 0f;
+    [NonSerialized] public float minHeight = 0f;
     public Gradient Colors;
     Tiles tiles;
     NavMeshSurface navMeshSurface;
     AStarPathfinding Pathfinding;
     [NonSerialized]public GameObject WaterPlane;
-
-    public List<GameObject> Artefacts = new List<GameObject>();
-    public List<GameObject> ArtefactsInLevel = new List<GameObject>();
 
     public List<FBMNoise> Noises;
 
@@ -93,19 +107,15 @@ public class TerrainGenerator : MonoBehaviour
 
         WaterPlane = GameObject.Find("Plane");
 
-        remakeMesh(); UpdateMesh(); 
+        remakeMesh(); //UpdateMesh(); 
         //tiles.GenerateGridFromTerrain(null,transform); SpawnArtefacts();
     }
 
     // Update is called once per frame
     void Update()
     {
-        // Debug.Log(tiles == null);
-
         // remakeMesh();
         //navMeshSurface.BuildNavMesh();
-
-        //Debug.Log(Pathfinding == null);
 
     }
 
@@ -197,13 +207,13 @@ public class TerrainGenerator : MonoBehaviour
                 {
                     minTerrainHeight = y;
                 }
-                else if (y > maxTerrainHeight)
+                if (y > maxTerrainHeight)
                 {
                     maxTerrainHeight = y;
                 }
                 vertices[i] = new Vector3(x, y, z);
 
-                float minHeight = Mathf.Max(minTerrainHeight, WaterHeight);
+                minHeight = Mathf.Max(minTerrainHeight, WaterHeight);
 
                 float normalizedHeight = Mathf.InverseLerp(minHeight, maxTerrainHeight, y);
 
@@ -263,6 +273,8 @@ public class TerrainGenerator : MonoBehaviour
 
     void remakeMesh()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
         Destroy(mesh);
         mesh = new Mesh();
         GetComponent<MeshFilter>().mesh = mesh;
@@ -272,7 +284,10 @@ public class TerrainGenerator : MonoBehaviour
 
         CreateShape();
         UpdateMesh();
-       // navMeshSurface.BuildNavMesh();
+        // navMeshSurface.BuildNavMesh();
+
+        sw.Stop();
+        Debug.Log("Terrain generation time: " + sw.ElapsedMilliseconds);
     }
 
 
@@ -331,16 +346,11 @@ public class TerrainGenerator : MonoBehaviour
                 case "Worley":
                     FBMnoise += WorleyNoise(new Vector2(x,y)) * a;
                     break;
-
             }
-
             a *= Persistence;
             x *= Lacunarity;
             y *= Lacunarity;
-
         }
-
-
         return FBMnoise;
     }
 
@@ -387,68 +397,170 @@ public class TerrainGenerator : MonoBehaviour
 
     public void SpawnArtefacts()
     {
+        ArtefactsInLevel.Clear();
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        int num = 1;
+
         List<Node> ReachableNodes = new List<Node>();
 
         Node startNode = tiles.GetNodeFromWorldPosition(GameObject.Find("Player").transform.position);
 
-        ReachableNodes = Pathfinding.GetReachableNodesFromPosition(startNode);
+        ReachableNodes = Pathfinding.GetReachableNodesFromPosition(startNode, true);
 
+        Debug.Log("Reachable Nodes: " + ReachableNodes.Count);
 
-
-/*        foreach (Node node in tiles.NodesGrid)
+        int ActualNumOfArtefacts = ReachableNodes.Count;
+        if (ActualNumOfArtefacts > DesiredNumOfArtefacts) { ActualNumOfArtefacts = DesiredNumOfArtefacts; }
+        else
         {
-            float rand = UnityEngine.Random.Range(0f, 1f);
-            int randArt = UnityEngine.Random.Range(0, Artefacts.Count);
-            if(node.nodeTyoe == NodeType.Untraversable) continue;
-            if(node.nodeTyoe == NodeType.Heavy) continue;
+            Debug.LogWarning("Desired Artefact amount is larger than the available space, filling the max possible");
+        }
 
-            if(UnreachableNodes.Contains(node)) continue;
+        int ActualNumOfEachArtefact = Mathf.FloorToInt(ActualNumOfArtefacts / Artefacts.Count);
 
-            List<Node> path = Pathfinding.GetPath(GameObject.Find("Player").transform.position, node.worldPos);
-
-            if (path.Count > 1)
-            {
-                //GameObject newArtefact = GameObject.Instantiate(Artefacts[randArt], node.worldPos, quaternion.identity);
-                ReachableNodes.Add(node);
-
-            }
+        if (ActualNumOfArtefacts < Artefacts.Count) { ActualNumOfEachArtefact = 1;}
+        else
+        {
+            if (ActualNumOfEachArtefact >= DesiredNumOfEachArtefact) { ActualNumOfEachArtefact = DesiredNumOfEachArtefact; }
             else
             {
-                UnreachableNodes.Add(node);
-            }
-
-            foreach (Node unreachableNode in UnreachableNodes)
-            {
-                List<Node> unreachNodeNeighbours = Pathfinding.GetNodeNeighbours(unreachableNode);
-                foreach(Node neighbour in unreachNodeNeighbours)
-                {
-                    if (visitedNode[neighbour])continue;
-                    if (neighbour.nodeTyoe == NodeType.Untraversable) continue;
-                    visitedNode.Add(neighbour, true);
-
-                }
-            }
-
-            if (rand < .02f)
-            {
-            }
-        }*/
-
-        for (int a = 0; a < Artefacts.Count; a++)
-        {
-            if (ReachableNodes.Count > 0)
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    int RandNodeIndex = UnityEngine.Random.Range(0, ReachableNodes.Count);
-
-                    GameObject newArtefact = GameObject.Instantiate(Artefacts[a], ReachableNodes[RandNodeIndex].worldPos, quaternion.identity);
-                    ArtefactsInLevel.Add(newArtefact);
-                    ReachableNodes.RemoveAt(RandNodeIndex);
-                }
+                Debug.LogWarning("Desired Number of each Artefact is too large for the desired total Artefact amount. New amount is " + ActualNumOfEachArtefact + " per Artefact");
             }
         }
 
+        List<Node> PriorityNodes = new List<Node>();
+
+        /*        foreach (Node node in tiles.NodesGrid)
+                {
+                    float rand = UnityEngine.Random.Range(0f, 1f);
+                    int randArt = UnityEngine.Random.Range(0, Artefacts.Count);
+                    if(node.nodeTyoe == NodeType.Untraversable) continue;
+                    if(node.nodeTyoe == NodeType.Heavy) continue;
+
+                    if(UnreachableNodes.Contains(node)) continue;
+
+                    List<Node> path = Pathfinding.GetPath(GameObject.Find("Player").transform.position, node.worldPos);
+
+                    if (path.Count > 1)
+                    {
+                        //GameObject newArtefact = GameObject.Instantiate(Artefacts[randArt], node.worldPos, quaternion.identity);
+                        ReachableNodes.Add(node);
+
+                    }
+                    else
+                    {
+                        UnreachableNodes.Add(node);
+                    }
+
+                    foreach (Node unreachableNode in UnreachableNodes)
+                    {
+                        List<Node> unreachNodeNeighbours = Pathfinding.GetNodeNeighbours(unreachableNode);
+                        foreach(Node neighbour in unreachNodeNeighbours)
+                        {
+                            if (visitedNode[neighbour])continue;
+                            if (neighbour.nodeTyoe == NodeType.Untraversable) continue;
+                            visitedNode.Add(neighbour, true);
+
+                        }
+                    }
+
+                    if (rand < .02f)
+                    {
+                    }
+                }*/
+
+        for (int a = 0; a < Artefacts.Count; a++)
+        {
+            for (int i = 0; i < ActualNumOfEachArtefact; i++)
+            {
+                if (ArtefactsInLevel.Count >= ActualNumOfArtefacts)
+                {
+                    break;
+                }
+                if (ReachableNodes.Count == 0)
+                {
+                    break;
+                }
+
+                ReachableNodes = Pathfinding.GetReachableNodesFromPosition(startNode, true);
+
+                int RandNodeIndex = UnityEngine.Random.Range(0, ReachableNodes.Count);
+                Node RandomNode = ReachableNodes[RandNodeIndex];
+                if(PriorityNodes.Contains(RandomNode)) continue;
+
+                bool BlocksAnotherArtefact = CheckSpawnBlocksArtefacts(startNode, RandomNode);
+
+                if (BlocksAnotherArtefact)
+                {
+                    PriorityNodes.Add(RandomNode);
+                    continue;
+                }
+
+                GameObject newArtefact = GameObject.Instantiate(Artefacts[a], ReachableNodes[RandNodeIndex].worldPos, quaternion.identity);
+                newArtefact.name += " - Allocated - " + num; num++;
+                ReachableNodes[RandNodeIndex].occupied = true;
+                ArtefactsInLevel.Add(newArtefact);
+                ReachableNodes.RemoveAt(RandNodeIndex);
+            }
+        }
+
+        int giveUp = 0;
+
+        if (ArtefactsInLevel.Count < DesiredNumOfArtefacts && ReachableNodes.Count > 0)
+        {
+            Debug.Log("Adding random extra Artefacts to reach total desired amount");
+            while (ArtefactsInLevel.Count < DesiredNumOfArtefacts && ReachableNodes.Count > 0 && giveUp < 100)
+            {
+                ReachableNodes = Pathfinding.GetReachableNodesFromPosition(startNode, true);
+
+                int RandNodeIndex = UnityEngine.Random.Range(0, ReachableNodes.Count);
+                int RandArtefactIndex = UnityEngine.Random.Range(0, Artefacts.Count);
+                Node RandomNode = ReachableNodes[RandNodeIndex];
+                if (PriorityNodes.Contains(RandomNode))
+                { 
+                    giveUp++;
+                    continue; }
+
+                bool BlocksAnotherArtefact = CheckSpawnBlocksArtefacts(startNode, RandomNode);
+
+                if (BlocksAnotherArtefact)
+                {
+                    PriorityNodes.Add(RandomNode);
+                    giveUp++; 
+                    continue;
+
+                }
+                //giveUp = 0;
+                GameObject newArtefact = GameObject.Instantiate(Artefacts[RandArtefactIndex], ReachableNodes[RandNodeIndex].worldPos, quaternion.identity);
+                newArtefact.name += " - RandomAdditional - " + num; num++;
+                ReachableNodes[RandNodeIndex].occupied = true;
+                ArtefactsInLevel.Add(newArtefact);
+                ReachableNodes.RemoveAt(RandNodeIndex);
+            }
+        }
+
+        if (DesiredNumOfArtefacts == ArtefactsInLevel.Count)
+        {
+            Debug.Log("Desired total Artefact amount reached");
+        }
+
+        sw.Stop();
+        Debug.Log("Artefact Placement time: " + sw.ElapsedMilliseconds);
+    }
+
+    bool CheckSpawnBlocksArtefacts(Node StartNode, Node newArtefactPos)
+    {
+        foreach (GameObject g in ArtefactsInLevel)
+        {
+            bool reachable = Pathfinding.ArtefactStillReachable(StartNode, tiles.GetNodeFromWorldPosition(g.transform.position), true, newArtefactPos);
+            if (!reachable)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void SpawnTrees()
@@ -465,13 +577,13 @@ public class TerrainGenerator : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (vertices == null || mesh == null) return;
+ /*       if (vertices == null || mesh == null) return;
         var norms = mesh.normals;
         for (int i = 0; i < vertices.Length; i++)
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawLine(vertices[i], vertices[i] + norms[i]);
-        }
+        }*/
     }
 
 }

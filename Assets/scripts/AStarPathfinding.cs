@@ -212,7 +212,7 @@ public class AStarPathfinding : MonoBehaviour
 
     }
 
-    public List<Node> GetReachableNodesFromPosition(Node StartNode)
+    public List<Node> GetReachableNodesFromPosition(Node StartNode, bool excludeOccupied)
     {
         List<Node> Reachable = new List<Node>();
         
@@ -233,6 +233,7 @@ public class AStarPathfinding : MonoBehaviour
             {
                 if(visited.Contains(neighbour))continue;
                 if(neighbour.nodeTyoe == NodeType.Untraversable)continue;
+                if(neighbour.occupied && excludeOccupied)continue;
 
                 visited.Add(neighbour);
                 Queue.Add(neighbour);
@@ -240,5 +241,50 @@ public class AStarPathfinding : MonoBehaviour
         }
 
         return Reachable;
+    }
+
+    public bool ArtefactStillReachable(Node StartNode, Node TargetNode, bool excludeOccupied, Node newArtefactPos)
+    {
+        bool reachable = false;
+
+        List<Node> Reachable = new List<Node>();
+
+        List<Node> Queue = new List<Node>();
+        HashSet<Node> visited = new HashSet<Node>();
+
+        Queue.Add(StartNode);
+        visited.Add(StartNode);
+
+        while (Queue.Count > 0)
+        {
+            Node current = Queue[0];
+            Queue.RemoveAt(0);
+
+            Reachable.Add(current);
+
+            if(current == TargetNode)
+            {
+                reachable = true;
+                break;
+            }
+
+            foreach (Node neighbour in GetNodeNeighbours(current))
+            {
+                if(neighbour == TargetNode)
+                {
+                    reachable = true;
+                    break;
+                }
+                if (visited.Contains(neighbour)) continue;
+                if (neighbour.nodeTyoe == NodeType.Untraversable) continue;
+                if (neighbour.occupied && excludeOccupied) continue;
+                //if (neighbour == newArtefactPos) continue;
+
+                visited.Add(neighbour);
+                Queue.Add(neighbour);
+            }
+        }
+
+        return reachable;
     }
 }

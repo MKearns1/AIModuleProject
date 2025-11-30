@@ -261,8 +261,7 @@ public class Enemy2 : EnemyBase
 
         }
         if (CanSeePlayer)
-        {        Debug.Log("Seeplayer");
-
+        {    
             ChangeState(EnemyStates.Alert_Chase, SuperStates.Alert);
         }
     }
@@ -399,7 +398,7 @@ public class Enemy2 : EnemyBase
         if (PatrolPoints == null)
         {
             if (GameObject.Find("AutoPatrolPoint" + ID) != null) Destroy(GameObject.Find("AutoPatrolPoint" + ID));
-            List<Node> ReachableNodes = Pathfinder.GetReachableNodesFromPosition(tiles.GetNodeFromWorldPosition(transform.position));
+            List<Node> ReachableNodes = Pathfinder.GetReachableNodesFromPosition(tiles.GetNodeFromWorldPosition(transform.position),false);
             int randomPoint = Random.Range(0, ReachableNodes.Count);
 
             GameObject patrolpoint = new GameObject();
@@ -471,7 +470,7 @@ public class Enemy2 : EnemyBase
 
             float distance = Vector3.Distance(testPos, PlayerLastSeenLocation);
 
-            float weight = 1f / (1f + distance);
+            float weight = 1 / (1 + distance);
 
             candidates.Add((node, weight));
         }
@@ -482,10 +481,10 @@ public class Enemy2 : EnemyBase
             return;
         }
 
-        // Weighted random pick
-        float total = candidates.Sum(c => c.weight);
-        float roll = Random.value * total;
-        float cumulative = 0f;
+        float total = 0;
+        foreach(var n in candidates) {total += n.weight;}
+        float roll = Random.Range(0,total);
+        float cumulative = 0;
 
         Node picked = null;
 
@@ -505,33 +504,6 @@ public class Enemy2 : EnemyBase
         }
 
         CurrentPath = Pathfinder.GetPath(transform.position, picked.worldPos);
-
-
-
-
-
-        /*
-                Vector3 RandomPoint = Vector3.zero;
-
-                for (int i = 0; i < 100; i++)
-                {
-                    Vector3 RandomOffset = Random.insideUnitSphere*20;
-                    RandomOffset.y = 0;
-
-                    RandomPoint = PlayerLastSeenLocation + RandomOffset;
-
-                    Node node = tiles.GetNodeFromWorldPosition(RandomPoint);
-
-                    if (node.nodeTyoe != NodeType.Untraversable)
-                    {
-                        break;
-                    }
-
-                }
-
-
-                CurrentPath = Pathfinder.GetPath(transform.position, RandomPoint);
-                TileMover.movementSpeed = 4;*/
 
     }
 
@@ -557,14 +529,14 @@ public class Enemy2 : EnemyBase
         }      
     }
 
-    void ExitSuperState(SuperStates oldSuperState)
+/*    void ExitSuperState(SuperStates oldSuperState)
     {
         switch (oldSuperState)
         {
             case SuperStates.Alert:
                 break;
         }
-    }
+    }*/
 
     void EnterSuperState(SuperStates newSuperState)
     {
@@ -590,11 +562,8 @@ public class Enemy2 : EnemyBase
 
     void ChangeState(EnemyStates NewState, SuperStates NewSuperState)
     {
-
-
         if (NewSuperState != CurrentSuperState)
         {
-            ExitSuperState(CurrentSuperState);
             EnterSuperState(NewSuperState);
             CurrentSuperState = NewSuperState;
         }
@@ -612,9 +581,7 @@ public class Enemy2 : EnemyBase
             case EnemyStates.Combat_Retreat: StartRetreat(); break;
             case EnemyStates.Alert_LookAround: StartLookAround(); break;
         }
-
         return;
-
     }
 
     void StartLookAround()
