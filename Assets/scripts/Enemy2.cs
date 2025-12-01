@@ -80,7 +80,7 @@ public class Enemy2 : EnemyBase
     {
         if (tiles.NodesGrid == null) return;
 
-        if (Input.GetKeyDown(KeyCode.F))
+ /*       if (Input.GetKeyDown(KeyCode.F))
         {
             StartChase();
         }
@@ -111,14 +111,7 @@ public class Enemy2 : EnemyBase
         {
             ChangeState(EnemyStates.Combat_Retreat, SuperStates.Combat);
 
-        }
-        repathTimer += Time.deltaTime;
-
-        if (repathTimer > 0.5f && !TileMover.moving)
-        {
-            repathTimer = 0f;
-            //ChasePlayer();
-        }
+        }*/
 
         CanSeePlayer = vision.CanSeeGameObject(player.gameObject);
 
@@ -130,9 +123,6 @@ public class Enemy2 : EnemyBase
         {
             SawPlayer();
         }
-           // Debug.Log(CanSeePlayer);
-
-            //Debug.Log(TimeSinceSeenPlayer);
 
             FollowPath();
 
@@ -205,8 +195,6 @@ public class Enemy2 : EnemyBase
         AgentInfo.transform.Find("StateText").transform.GetComponent<TextMeshPro>().text = "State: " + CurrentState.ToString();
         AgentInfo.transform.Find("HealthText").transform.GetComponent<TextMeshPro>().text = "Health: " + Health.ToString();
         AgentInfo.transform.Find("BotID").transform.GetComponent<TextMeshPro>().text = "ID: " + ID;
-
-     //   Debug.Log("tIMESINCESEENPLAYER: "+ TimeSinceSeenPlayer);
 
     }
 
@@ -305,7 +293,75 @@ public class Enemy2 : EnemyBase
         
 
     }
+    void CombatUpdate()
+    {
+        switch (CurrentState)
+        {
+            case EnemyStates.Combat_Retreat:
+                RetreatUpdate();
+                break;
 
+            case EnemyStates.Combat_Attacking:
+                AttackUpdate();
+                break;
+
+        }
+
+        if (TimeSinceSeenPlayer > 3 || Vector3.Distance(transform.position, player.transform.position) > 10)
+        {
+            if (CurrentState == EnemyStates.Combat_Attacking)
+            {
+                ChangeState(EnemyStates.Alert_Chase, SuperStates.Alert);
+            }
+            return;
+        }
+
+    }
+    void EnterSuperState(SuperStates newSuperState)
+    {
+        switch (newSuperState)
+        {
+            case SuperStates.Explore:
+                TileMover.movementSpeed = 2;
+                setColour(Color.green);
+                break;
+
+            case SuperStates.Alert:
+                TileMover.movementSpeed = 4;
+                setColour(Color.yellow);
+                break;
+
+            case SuperStates.Combat:
+                TileMover.movementSpeed = 5;
+                setColour(Color.red);
+                break;
+        }
+
+    }
+
+    void ChangeState(EnemyStates NewState, SuperStates NewSuperState)
+    {
+        if (NewSuperState != CurrentSuperState)
+        {
+            EnterSuperState(NewSuperState);
+            CurrentSuperState = NewSuperState;
+        }
+
+        CurrentState = NewState;
+        RetreatChoice = Random.value;
+
+        switch (NewState)
+        {
+            case EnemyStates.Explore_Idle: StartIdle(); break;
+            case EnemyStates.Explore_Patrol: StartPatrol(); break;
+            case EnemyStates.Alert_Search: StartSearch(); break;
+            case EnemyStates.Alert_Chase: StartChase(); break;
+            case EnemyStates.Combat_Attacking: StartAttack(); break;
+            case EnemyStates.Combat_Retreat: StartRetreat(); break;
+            case EnemyStates.Alert_LookAround: StartLookAround(); break;
+        }
+        return;
+    }
     void LookAroundUpdate()
     {
         float step = LookAroundSpeed * Time.deltaTime;
@@ -538,51 +594,7 @@ public class Enemy2 : EnemyBase
         }
     }*/
 
-    void EnterSuperState(SuperStates newSuperState)
-    {
-        switch (newSuperState)
-        {
-            case SuperStates.Explore:
-                TileMover.movementSpeed = 2;
-                setColour(Color.green);
-                break;
-
-            case SuperStates.Alert:
-                TileMover.movementSpeed = 4;
-                setColour(Color.yellow);
-                break;
-
-            case SuperStates.Combat:
-                TileMover.movementSpeed = 5;
-                setColour(Color.red);
-                break;
-        }
-
-    }
-
-    void ChangeState(EnemyStates NewState, SuperStates NewSuperState)
-    {
-        if (NewSuperState != CurrentSuperState)
-        {
-            EnterSuperState(NewSuperState);
-            CurrentSuperState = NewSuperState;
-        }
-
-        CurrentState = NewState;
-        RetreatChoice = Random.value;
-
-        switch (NewState)
-        {
-            case EnemyStates.Explore_Idle: StartIdle(); break;
-            case EnemyStates.Explore_Patrol: StartPatrol(); break;
-            case EnemyStates.Alert_Search: StartSearch(); break;
-            case EnemyStates.Alert_Chase: StartChase(); break;
-            case EnemyStates.Combat_Attacking: StartAttack(); break;
-            case EnemyStates.Combat_Retreat: StartRetreat(); break;
-            case EnemyStates.Alert_LookAround: StartLookAround(); break;
-        }
-        return;
-    }
+   
 
     void StartLookAround()
     {
@@ -620,31 +632,6 @@ public class Enemy2 : EnemyBase
             }
         }
         return;
-    }
-
-    void CombatUpdate()
-    {
-        switch (CurrentState)
-        {
-            case EnemyStates.Combat_Retreat:
-                RetreatUpdate();
-                break;
-
-            case EnemyStates.Combat_Attacking:
-                AttackUpdate();
-                break;
-
-        }
-
-        if (TimeSinceSeenPlayer > 3 || Vector3.Distance(transform.position, player.transform.position) > 10)
-        {
-            if (CurrentState == EnemyStates.Combat_Attacking)
-            {
-                ChangeState(EnemyStates.Alert_Chase, SuperStates.Alert);
-            }
-            return;
-        }
-
     }
 
     void AttackUpdate()
@@ -687,7 +674,6 @@ public class Enemy2 : EnemyBase
         Node myNode = tiles.GetNodeFromWorldPosition(transform.position);
         int searchRadius = 20;
 
-        // --- STEP 1: Populate candidates ---
         for (int x = -searchRadius; x <= searchRadius; x++)
         {
             for (int y = -searchRadius; y <= searchRadius; y++)
@@ -695,7 +681,6 @@ public class Enemy2 : EnemyBase
                 int nx = myNode.GridPos.x + x;
                 int ny = myNode.GridPos.y + y;
 
-                // Bounds check
                 if (nx < 0 || ny < 0 || nx >= tiles.GridSize || ny >= tiles.GridSize)
                     continue;
 
@@ -714,7 +699,6 @@ public class Enemy2 : EnemyBase
             }
         }
 
-        // No candidates? fall back
         if (candidates.Count == 0)
         {
             Debug.LogWarning("No retreat nodes found. Falling back.");
@@ -723,19 +707,18 @@ public class Enemy2 : EnemyBase
             return;
         }
 
-        // --- STEP 2: Utility scoring ---
+        List<Node> ReachableNodes = Pathfinder.GetReachableNodesFromPosition(myNode, true);
+
         Node bestNode = null;
         float bestScore = Mathf.NegativeInfinity;
 
         foreach (Node n in candidates)
         {
-            //List<Node> path = Pathfinder.GetPath(transform.position, n.worldPos);
-            //if (path.Count == 0) continue;
+            if (!ReachableNodes.Contains(n)) continue;
 
             float distanceScore = Vector3.Distance(n.worldPos, player.transform.position);
-            int coverScore =1;
 
-            float utility = distanceScore * 1.5f + coverScore * 3f;
+            float utility = distanceScore * 1.5f;
 
             if (utility > bestScore)
             {
@@ -744,12 +727,11 @@ public class Enemy2 : EnemyBase
             }
         }
 
-        // Path found?
         if (bestNode != null)
         {
             CurrentPath = Pathfinder.GetPath(transform.position, bestNode.worldPos);
-            GameObject n = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            n.transform.position = bestNode.worldPos;
+           // GameObject n = GameObject.CreatePrimitive(PrimitiveType.Cube);
+          //  n.transform.position = bestNode.worldPos;
             Debug.Log("Retreating to best utility node: " + bestNode.GridPos);
             return;
         }
@@ -830,7 +812,7 @@ public class Enemy2 : EnemyBase
 
 
         RetreatChoice = Random.value;
-        if (RetreatChoice < RetreatProbability)
+        if (RetreatChoice < RetreatProbability && CurrentState != EnemyStates.Combat_Retreat)
         {
             ChangeState(EnemyStates.Combat_Retreat, SuperStates.Combat);
         }
@@ -884,7 +866,7 @@ public class Enemy2 : EnemyBase
 
             Gizmos.DrawCube(MoveDirection + transform.position, Vector3.one * 1 * .9f);
         }
-        else
+        else if (false)
         {
             if (player != null && tiles.NodesGrid != null)
             {

@@ -144,24 +144,9 @@ public class AStarPathfinding : MonoBehaviour
             {
 
                 bool shouldSkip = CurrentNodeNeighbour.nodeTyoe == NodeType.Untraversable || ExploredNodes.Contains(CurrentNodeNeighbour);
-/*                bool occupied = true;
-                if(CurrentNodeNeighbour.Occupier == gameObject || CurrentNodeNeighbour.occupied == false) { occupied = false; }*/
 
                 bool occupied = CurrentNodeNeighbour.occupied && CurrentNodeNeighbour.Occupier != this.gameObject;
 
-/*
-                if (CurrentNodeNeighbour.occupied)
-                {
-                    if (CurrentNodeNeighbour != TilesScript.GetNodeFromWorldPosition(transform.position))
-                    {
-                        occupied = false;
-                    }
-
-                }
-                else
-                {
-                    occupied = false;
-                }*/
                 bool isGoal = EndNode == CurrentNodeNeighbour;
 
                 if (!isGoal && (shouldSkip || occupied))

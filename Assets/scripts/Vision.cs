@@ -137,11 +137,10 @@ public class Vision : MonoBehaviour
     {
         if (VisionStartPoint == null)
             return;
-        // View distance
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(VisionStartPoint.position, viewDistance);
 
-        // Cone lines
         Vector3 leftDir = Quaternion.Euler(0, -viewAngle / 2f, 0) * VisionStartPoint.forward;
         Vector3 rightDir = Quaternion.Euler(0, viewAngle / 2f, 0) * VisionStartPoint.forward;
 

@@ -29,6 +29,7 @@ public class BulletScript : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject == owner) return;
+        if(other.gameObject.layer != LayerMask.NameToLayer("Enemy") && other.gameObject.layer != LayerMask.NameToLayer("Unwalkable")) { return; }
 
         if (other.gameObject.tag == "Enemy")
         {

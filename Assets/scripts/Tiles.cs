@@ -30,11 +30,7 @@ public class Tiles : MonoBehaviour
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
-    {
-       
-
-        //Camera.main.orthographicSize = GridSize*Scale;
-        
+    {        
 
         Vector3 GridCentre = Vector3.one *GridSize* Scale/2;GridCentre.y = 0;
         Vector3 offset = new Vector3(0, 15, -25);
@@ -53,10 +49,6 @@ public class Tiles : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // Debug.Log(NodesGrid.GetLength(0).ToString() + " "+NodesGrid.GetLength(1).ToString());
-
-        //transform.GetComponent<AStarPathfinding>().GetPath(Vector3.zero, GameObject.Find("Player").transform.position);
-
         if(NodesGrid == null)
             return;
 
@@ -96,41 +88,16 @@ public class Tiles : MonoBehaviour
             for (int y = 0; y < GridSize; y++)
             {
                 Vector3 direction = new Vector3(x * Scale, 0, y * Scale);
-                //direction += BottomLeft;
-                //BottomLeft += direction;
                 Vector3 TilePosition = direction + BottomLeft;
-              //  GameObject newTile = CreateTile(TilePosition);
 
                 Vector2Int gridpos = new Vector2Int(x, y);
 
-                bool NodeWalkable = true;
-
-
                 NodeType nodeType = DetectNodeType(TilePosition);
-
 
                 Node node = new Node(gridpos, TilePosition, nodeType);
 
                 NodesGrid[x, y] = node;
 
-               // newTile.GetComponent<Renderer>().material.color = Color.white;
-
-
-                if (x % 2 == 0)
-                {
-                    if (y % 2 != 0)
-                    {
-                       // newTile.GetComponent<Renderer>().material.color = Color.gray;
-                    }
-                }
-                else
-                {
-                    if (y % 2 == 0)
-                    {
-                        //newTile.GetComponent<Renderer>().material.color = Color.gray;
-                    }
-                }
-                //newTile.GetComponent<Renderer>().material
             }
         }
     }
@@ -202,7 +169,6 @@ public class Tiles : MonoBehaviour
 
     public Node GetNodeFromWorldPosition(Vector3 WorldPosition)
     {
-
         float worldOffsetX = WorldPosition.x - BottomLeft.x;
         float worldOffsetY = WorldPosition.z - BottomLeft.z;
 
@@ -213,23 +179,6 @@ public class Tiles : MonoBehaviour
         NodePosY = Mathf.Clamp(NodePosY, 0, GridSize - 1);
 
         return NodesGrid[NodePosX, NodePosY];
-
-
-
-    //    float PercentAcrossXaxis =
-    //(WorldPosition.x - BottomLeft.x) / (GridSize * Scale);
-
-    //    float PercentAcrossYaxis =
-    //        (WorldPosition.z - BottomLeft.z) / (GridSize * Scale);
-
-
-    //    PercentAcrossXaxis = Mathf.Clamp01(PercentAcrossXaxis);
-    //    PercentAcrossYaxis = Mathf.Clamp01(PercentAcrossYaxis);
-
-    //    int NodePosX = Mathf.RoundToInt((GridSize-1) *PercentAcrossXaxis);
-    //    int NodePosY = Mathf.RoundToInt((GridSize - 1) * PercentAcrossYaxis);
-
-    //    return NodesGrid[NodePosX+0, NodePosY+0];
     }
 
     public NodeType DetectNodeType(Vector3 WorldPos)
@@ -285,8 +234,6 @@ public class Tiles : MonoBehaviour
 
                         if (!DebugNodes.Contains(nodeType)) { continue; }
 
-                        //pos.z = pos.y;
-
                         Gizmos.color = Color.white;
 
                         switch (nodeType)
@@ -305,11 +252,6 @@ public class Tiles : MonoBehaviour
                         {
                             Gizmos.color = Color.yellow;
                         }
-                        //else if (!NodesGrid[i, j].walkable)
-                        //{
-                        //    Gizmos.color = Color.black;
-                        //}
-
                         
                         Gizmos.DrawCube(pos, scale * .7f);
                     }

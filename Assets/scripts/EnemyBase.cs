@@ -60,7 +60,6 @@ public class EnemyBase : MonoBehaviour
         Dir = Dir.normalized;
 
         bullet.Initialize(Dir, this.gameObject, DamageAmount);
-        //bullet.Initialize(transform.forward);
         newBullet.transform.rotation = transform.rotation;
     }
 

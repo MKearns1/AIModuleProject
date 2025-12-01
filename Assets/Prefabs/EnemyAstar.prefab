@@ -374,8 +374,8 @@ MonoBehaviour:
   player: {fileID: 0}
   AttackRate: 1
   NextAttack: 0
-  Health: 5
-  MaxHealth: 5
+  Health: 15
+  MaxHealth: 15
   ID: 
   BulletPrefab: {fileID: 5129902741809793479, guid: bc3e4a31374ab0c44b7991767f0a9b39, type: 3}
   BulletSpawnPos: {fileID: 8901828794391091856}
@@ -407,7 +407,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25e0e90a92e103f4586db33a6aef05f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  viewDistance: 2.3
+  viewDistance: 15
   viewAngle: 120
   obstacleMask:
     serializedVersion: 2

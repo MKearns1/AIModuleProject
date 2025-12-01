@@ -7,7 +7,7 @@ public class Player : MonoBehaviour
 {
     Rigidbody rb;
     float movementSpeed = 10;
-    int Health = 522;
+    int Health = 20;
     float moveAmount;
     Tiles tilescript;
     Vector3 MoveToPos;
@@ -46,34 +46,13 @@ public class Player : MonoBehaviour
         CamPos.y = Camera.main.transform.position.y;
         Camera.main.transform.position = CamPos;
 
-
-        //if (verticalInput > 0)
-        //{
-        //    TileMovement(Vector3.forward);
-        //}
-        //else if (verticalInput < 0)
-        //{
-        //    TileMovement(Vector3.back);
-
-        //}
-        //else if(horizontalInput > 0)
-        //{
-        //    TileMovement(Vector3.right);
-
-        //}
-        //else if (horizontalInput < 0)
-        //{
-        //    TileMovement(Vector3.left);
-
-        //}
-
         CheckInputs();
 
         tilescript.GetNodeFromWorldPosition(transform.position).PlayerScentStrength = 1;
 
 
         HealthText.transform.rotation = Camera.main.transform.rotation;
-        HealthText.text = Health.ToString();
+        HealthText.text = "Health: " + Health.ToString();
 
         //Move();
     }
